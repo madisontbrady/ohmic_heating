@@ -19,6 +19,138 @@ RJUP=7.149e7
 MJUP=1.899e27
 G=6.67e-11
 MEARTH=5.972e24
+AMU=1.6605402e-27
+MH = 1.008*AMU
+MHE = 4.0026*AMU
+
+
+
+
+# Read in EOS tables from Saumon+1995 (included in the MESA files)
+
+def read_scvh_file(fname):
+    f = open(fname)
+    lines = f.readlines()
+    f.close()
+    
+    n_values = np.array([len(i.split()) for i in lines])
+    n_temps = len(n_values[n_values==2])
+    n_models = len(n_values[n_values==n_values[1]])
+
+    data_arr = np.zeros((len(n_values[n_values==n_values[1]]), n_values[1]+1))
+    current_temp=np.nan
+    j=0
+    for i in range(len(lines)):
+        values = lines[i].split()
+        if len(values)==2:
+            current_temp=float(values[0])
+        else:
+            data_arr[j] = np.concatenate(([current_temp], np.array(values).astype(float)))
+            j+=1
+    return data_arr
+        
+fname="h_tab_S95.dat"
+h_data = read_scvh_file(fname)
+
+h_logt = h_data[:,0]
+h_logp = h_data[:,1]
+h_xh2 = h_data[:, 2]
+h_xh = h_data[:, 3]
+h_logrho = h_data[:, 4]
+
+calcxh2 = LinearNDInterpolator(np.array([h_logt, h_logp]).T, np.array(h_xh2))
+calcxh = LinearNDInterpolator(np.array([h_logt, h_logp]).T, np.array(h_xh))
+calclogrhoh = LinearNDInterpolator(np.array([h_logt, h_logp]).T, np.array(h_logrho))
+
+
+fname="he_tab_S95.dat"
+he_data = read_scvh_file(fname)
+
+he_logt = he_data[:,0]
+he_logp = he_data[:,1]
+he_xhe = he_data[:, 2]
+he_xhep = he_data[:, 3]
+he_logrho = he_data[:, 4]
+
+calcxhe = LinearNDInterpolator(np.array([he_logt, he_logp]).T, np.array(he_xhe))
+calcxhep = LinearNDInterpolator(np.array([he_logt, he_logp]).T, np.array(he_xhep))
+calclogrhohe = LinearNDInterpolator(np.array([he_logt, he_logp]).T, np.array(he_logrho))
+
+
+
+
+# from https://arxiv.org/pdf/1208.0933
+
+def nn_ne(logt, logp, y=0.283):
+    """
+    Use the prescription from Chang+2012 to estimate nn/ne, the fraction
+    of neutral atoms to electrons.
+    
+    logt = log temperature (K)
+    logp = log pressure (bayres) 
+    
+    """
+    xh2 = calcxh2(logt, logp)
+    xh =  calcxh(logt, logp)
+    rhoh_theoretical =  10**calclogrhoh(logt, logp) * 1000 # convert to kg/m^3
+    xhe = calcxhe(logt, logp)
+    xhep = calcxhep(logt, logp)
+    rhohe_theoretical=10**calclogrhohe(logt, logp)* 1000 # convert to kg/m^3
+
+    try:
+        xh_elec = np.nanmax(np.array([np.zeros(len(xh2)), 1/2 * (1- xh2 - xh)]), axis=0)
+        xhe_elec = np.nanmax(np.array([np.zeros(len(xh2)), 1/3 * (2 - 2*xhe - xhep)]),axis=0)
+    except:
+        xh_elec = np.nanmax(np.array([0, 1/2 * (1- xh2 - xh)]))
+        xhe_elec = np.nanmax(np.array([0, 1/3 * (2 - 2*xhe - xhep)]))     
+    xhp=xh_elec
+
+    xhe2p = (xhe_elec - xhep)/2
+
+    try:
+        xh_elec[xh_elec==0]=np.nan
+        xhe_elec[xhe_elec==0]=np.nan
+    except:
+        if xh_elec==0: xh_elec=np.nan
+        if xhe_elec==0: xhe_elec=np.nan
+
+    rho = (((1-y)/rhoh_theoretical) + (y/rhohe_theoretical))**(-1)
+
+    rhoh= (1-y)*rho
+    rhohe=y*rho
+    
+
+    npr = 3*rhohe/MHE / (1 + 2*xhe + xhep) * (xhe2p +xhep) +  2*rhoh/MH / (1 + 3*xh2 + xh)*xhp
+    nn = 3*rhohe/MHE / (1 + 2*xhe + xhep) * (xhe) + 2*rhoh/MH / (1 + 3*xh2 + xh)*xh2 +  2*rhoh/MH / (1 + 3*xh2 + xh)*xh
+    ne = 3*rhohe/MHE / (1 + 2*xhe + xhep) * (xhe_elec) + 2*rhoh/MH / (1 + 3*xh2 + xh)*xh_elec
+    n = 3*rhohe/MHE / (1 + 2*xhe + xhep) + 2*rhoh/MH / (1 + 3*xh2 + xh)
+    return(nn/ne)
+
+
+
+def diffusivity_hhe_si(t,p,y=0.283):
+    """
+    Calculate the diffusivity (m^2/s) using the equation from Blaes & Balbus 1994.
+    t = temperature (K)
+    p = Pressure (pa) 
+    """
+    # we multiply pressure by 10 to convert it to bayres for the nn_ne calculation (the tables from Saumon are in cgs)
+    eta = 0.023 * nn_ne(np.log10(t), np.log10(p*10), y=y) * t**(1/2) # s^-1
+
+    return eta
+
+def diffusivity_L08(t,p):
+    """
+    Calculate the diffusivity (m^2/s) using the equation from Laine+2008.
+    t = temperature (K)
+    p = Pressure (pa) 
+    """
+    return 1.28e-2 * np.sqrt(p)/t**(3/4) * np.exp(78909/t)
+    
+
+
+
+
 
 def arctan2(y, x):
     # 4-quadrant arctangent
@@ -1073,6 +1205,9 @@ def find_power(
                 print(r[idx], tprofile(r[idx]), pprofile(r[idx]))
             
             return eta
+    else:
+        eta_use=eta_simple
+        rp=fixed_radius
 
     pinds = np.zeros(len(ts))  # induction power as a function of time.
     dts = np.zeros(len(ts))  # change in surface temp as a function of time.
