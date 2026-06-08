@@ -741,6 +741,129 @@ def find_coeffs(rp, y1s, y2s, y3s, alpha, m, a, e):
 
     return data
 
+def find_coeffs_lam(rp, ys, lam, m, a):
+    """find the mu and nu coefficients defined in Laine+ 2008, for the specific case
+    where alpha = 0 and eccentricity = 0.
+    
+    inputs:
+    rp = radius of planet (m)
+    ys = outputs of find_ys for omega = omega_p
+    lam = obliquity angle (radians)
+    a = planet distance from star (m)    
+    """
+
+    data = {}
+
+
+
+    # l=1, m=1 case.  Standard settings.
+
+    reg1 = ys["y11"](rp)
+    img1 = ys["y12"](rp)
+    reg1dot = ys["y13"](rp)
+    img1dot = ys["y14"](rp)
+
+    # mu11, mu1m1, nu11, nu1m1, a1, a2, a3, a4
+    eqns = np.array(
+        [
+            [ -img1, img1, -reg1, reg1, 1 / rp * np.sqrt(8 * np.pi / 3) * 1, 0, 0, 0,],
+            [ reg1, -reg1, -img1, img1, 0, 1 / rp * np.sqrt(8 * np.pi / 3) * 1, 0, 0,],
+            [ -reg1, -reg1, img1, img1, 0, 0, 1 / rp * np.sqrt(8 * np.pi / 3) * 1, 0,],
+            [ -img1, -img1,-reg1,-reg1, 0, 0, 0, 1 / rp * np.sqrt(8 * np.pi / 3) * 1,],
+            [ -img1dot, img1dot, -reg1dot, reg1dot, -1 / rp**2 * np.sqrt(8 * np.pi / 3) * 1, 0, 0, 0,],
+            [ reg1dot, -reg1dot, -img1dot, img1dot, 0, -1 / rp**2 * np.sqrt(8 * np.pi / 3) * 1, 0, 0,],
+            [ -reg1dot, -reg1dot, img1dot, img1dot, 0, 0, -1 / rp**2 * np.sqrt(8 * np.pi / 3) * 1, 0,],
+            [ -img1dot, -img1dot,-reg1dot,-reg1dot, 0, 0, 0, -1 / rp**2 * np.sqrt(8 * np.pi / 3) * 1,],
+        ]
+    )
+
+    sols = np.array(
+        [
+            np.sqrt(8 * np.pi / 3) * 2 * m * np.sin(lam) * rp**2 / (8 * np.pi * a**3) * 1,
+            0,
+            np.sqrt(8 * np.pi / 3) * m * np.sin(lam) * rp**2 / (8 * np.pi * a**3) * 1,
+            0,
+            np.sqrt(8 * np.pi / 3) * 4 * m * np.sin(lam) * rp / (8 * np.pi * a**3) * 1,
+            0,
+            np.sqrt(8 * np.pi / 3) * 2 * m * np.sin(lam) * rp / (8 * np.pi * a**3 * 1),
+            0,
+        ]
+    )
+
+    x = np.linalg.solve(eqns, sols)
+
+    data["mu11"] = x[0]
+    data["mu1m1"] = x[1]
+    data["nu11"] = x[2]
+    data["nu1m1"] = x[3]
+
+    # l=2, m=0 case, wp terms.
+    reg2 = ys["y21"](rp)
+    img2 = ys["y22"](rp)
+    reg2dot = ys["y23"](rp)
+    img2dot = ys["y24"](rp)
+
+    # mu120, nu120, beta1, beta2
+    eqns = np.array(
+        [
+            [-img2, -reg2, -np.sqrt(4 * np.pi / 5) * (1 / rp**2), 0],
+            [reg2, -img2, 0, -np.sqrt(4 * np.pi / 5) * (1 / rp**2)],
+            [-img2dot, -reg2dot, 2 * np.sqrt(4 * np.pi / 5) * (1 / rp**3), 0],
+            [reg2dot, -img2dot, 0, 2 * np.sqrt(4 * np.pi / 5) * (1 / rp**3)],
+        ]
+    )
+
+    sols = np.array(
+        [
+            np.sqrt(4 * np.pi / 5) * m * np.sin(lam) * rp**3 / 8 / np.pi / a**4,
+            0,
+            3 * np.sqrt(4 * np.pi / 5) * m * np.sin(lam) * rp**2 / 8 / np.pi / a**4,
+            0,
+        ]
+    )
+
+    x = np.linalg.solve(eqns, sols)
+
+    data["mu20"] = x[0]
+    data["nu20"] = x[1]
+
+
+
+    # mu122, mu12m2, nu122, nu12m2, b1, b2, b3, b4
+    eqns = np.array(
+        [
+            [-img2, -img2, -reg2, -reg2, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0, 0, 0,],
+            [ reg2,  reg2, -img2, -img2, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0, 0,],
+            [-reg2,  reg2,  img2, -img2, 0, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0,],
+            [-img2,  img2, -reg2,  reg2, 0, 0, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2,],
+            [-img2dot,-img2dot,-reg2dot,-reg2dot, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0, 0, 0,],
+            [ reg2dot, reg2dot,-img2dot,-img2dot, 0, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0, 0,],
+            [-reg2dot, reg2dot, img2dot,-img2dot, 0, 0, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0,],
+            [-img2dot, img2dot,-reg2dot, reg2dot, 0, 0, 0, 4 * 2 ** np.sqrt(6 * np.pi / 5) * 1 / rp**3,],
+        ]
+    )
+    sols = np.array(
+        [
+            -2 * np.sqrt(6 * np.pi / 5) * m * np.sin(lam) * rp**3 / 8 / np.pi / a**4,
+            0,
+            -4 / 3 * np.sqrt(6 * np.pi / 5) * m * np.sin(lam) * rp**3 / 8 / np.pi / a**4,
+            0,
+            -3 * 2 * np.sqrt(6 * np.pi / 5) * m * np.sin(lam) * rp**2 / 8 / np.pi / a**4,
+            0,
+            -3 * 4 / 3 * np.sqrt(6 * np.pi / 5) * m * np.sin(lam) * rp**2 / 8 / np.pi / a**4,
+            0,
+        ]
+    )
+    x = np.linalg.solve(eqns, sols)
+
+    data["mu22"] = x[0]
+    data["mu2m2"] = x[1]
+    data["nu22"] = x[2]
+    data["nu2m2"] = x[3]
+
+
+
+    return data
 
 def find_as(r, y1s, y2s, y3s, coeffs):
     """
@@ -842,6 +965,73 @@ def find_as(r, y1s, y2s, y3s, coeffs):
 
     return a_vals
 
+def find_as_zeroecc(r, ys, coeffs):
+    """
+    find the A coefficients as defined in our paper, in the specific case that eccentricity = 0.
+    inputs:
+    rp = radius of planet (m)
+    ys = outputs of find_ys
+    coeffs = output of find_coeffs for this model.
+    
+    """
+    reg11 = ys["y11"](r)
+    img11 = ys["y12"](r)
+
+    reg12 = ys["y21"](r)
+    img12 = ys["y22"](r)
+
+    a_vals = {}
+
+    a_vals["a11"] = (-coeffs["nu11"] + coeffs["nu1m1"]) * reg11 + (
+        -coeffs["mu11"] + coeffs["mu1m1"]
+    ) * img11
+    a_vals["a12"] = (-coeffs["mu11"] - coeffs["mu1m1"]) * reg11 + (
+        coeffs["nu11"] + coeffs["nu1m1"]
+    ) * img11
+    a_vals["a13"] = (-coeffs["mu11"] + coeffs["mu1m1"]) * reg11 + (
+        coeffs["nu11"] - coeffs["nu1m1"]
+    ) * img11
+    a_vals["a14"] = (coeffs["nu11"] + coeffs["nu1m1"]) * reg11 + (
+        coeffs["mu11"] + coeffs["mu1m1"]
+    ) * img11
+
+    a_vals["a15"] = reg12 * coeffs["nu20"] + img12 * coeffs["mu20"]
+    a_vals["a16"] = reg12 * coeffs["mu20"] - img12 * coeffs["nu20"]
+
+    a_vals["a17"] = reg12 * (coeffs["nu22"] + coeffs["nu2m2"]) + img12 * (
+        coeffs["mu22"] + coeffs["mu2m2"]
+    )
+    a_vals["a18"] = reg12 * (coeffs["mu22"] - coeffs["mu2m2"]) + img12 * (
+        -coeffs["nu22"] + coeffs["nu2m2"]
+    )
+    a_vals["a19"] = reg12 * (coeffs["mu22"] + coeffs["mu2m2"]) + img12 * (
+        -coeffs["nu22"] - coeffs["nu2m2"]
+    )
+    a_vals["a110"] = reg12 * (-coeffs["nu22"] + coeffs["nu2m2"]) + img12 * (
+        -coeffs["mu22"] + coeffs["mu2m2"]
+    )
+    
+    # Set all of the cross terms equal to zero, as they are in the e=0 scenario.
+
+    a_vals["a21"] = 0
+    a_vals["a22"] = 0
+    a_vals["a23"] = 0
+    a_vals["a24"] = 0
+    a_vals["a25"] = 0
+    a_vals["a26"] = 0
+    a_vals["a31"] = 0
+    a_vals["a32"] = 0
+    a_vals["a33"] = 0
+    a_vals["a34"] = 0
+    a_vals["a35"] = 0
+    a_vals["a36"] = 0
+    a_vals["a37"] = 0
+    a_vals["a38"] = 0
+    a_vals["a39"] = 0
+    a_vals["a310"] = 0
+    return a_vals
+    
+    
 
 def pvol(t, w, wp, r, rp, a_vals, eta_func, eta_mult=1, temp_mult=1):
     """
@@ -1046,7 +1236,6 @@ def pvol(t, w, wp, r, rp, a_vals, eta_func, eta_mult=1, temp_mult=1):
         )
     )
     
-    
 def generate_profile(mpl=1,teq=600, cmf=0.01, log_feh=0, co=0.55, tint=100, fixed_radius=None):
     """
     Uses GASTLI to generate cubic spline-interpolated temperature and pressure profile of a planet.
@@ -1216,7 +1405,6 @@ def find_power(
 
 
     y1 = find_ys(w, rp, eta_use, r0=r0, eta_mult=eta_mult, temp_mult=temp_mult)
-
     y2 = find_ys(wp, rp, eta_use, r0=r0, eta_mult=eta_mult, temp_mult=temp_mult)
     y3 = find_ys(w + wp, rp, eta_use, r0=r0, eta_mult=eta_mult, temp_mult=temp_mult)
     coeffs = find_coeffs(rp, y1, y2, y3, alpha, m, d, ecc)
@@ -1240,6 +1428,7 @@ def find_power(
         p_r = pvol(
             ts[i], w, wp, r_profile, rp, a_vals, eta_use, eta_mult=eta_mult, temp_mult=temp_mult
         )
+
         # save the power profile for the first value in the ts array
         if i==0:
             pind_profile = p_r
@@ -1250,4 +1439,115 @@ def find_power(
         pinds[i] = pheat
 
     return pinds, dts, teqs, r_profile, pind_profile, eta_use(r_profile, rp)
+
+
+def find_power_lambda_zeroalpha(
+    ts,
+    lam=np.pi/2,
+    r0=0.0001,
+    p=1,
+    bsurf=4 * 10**3,
+    mstar=1,
+    rstar=1,
+    tstar=5778,
+    tsurf=None,
+    temp_mult=1,
+    eta_mult=1,
+    plot=False,
+    use_GASTLI=False,
+    fixed_radius=None,
+    nr=1000,
+    mp=1,
+    cmf=0.01,
+    log_feh=0,
+    co=0.55,
+    tint=100,
+    pregen_tprofile=None,
+    pregen_pprofile=None,
+    pregen_r = None,
+):
+    """
+    Finds the power, similarly to find_power(), but in the scenario where
+    alpha = ecc = 0.  
+    lam = the obliquity of the star, in radians. 
+    """
+    
+
+    # calculate magnetic moment.
+    m = (rstar * RSOLAR) ** 3 * (bsurf / 10000) / 2 * 4 * np.pi / MU0
+    # calculate the semi-major axis.
+    a = ((p / 365) ** 2 * mstar) ** (1 / 3)
+    d = a * AU
+
+    # Calculate w.
+    wp = 2 * np.pi / (p * 24 * 3600)
+
+    teq = tstar * np.sqrt(rstar * RSOLAR / (a * AU)) * (1 / 4) ** (1 / 4)
+    if use_GASTLI == True:
+    
+    	if pregen_tprofile==None and pregen_pprofile==None and pregen_r==None:
+            rp, tprofile, pprofile = generate_profile(
+                mpl=mp, teq=teq, cmf=cmf, log_feh=log_feh, co=co, tint=tint, fixed_radius=fixed_radius,
+            )
+    	else:
+            rp, tprofile, pprofile = pregen_r, pregen_tprofile, pregen_pprofile
+
+
+    	def eta_use(r, rp, temp_mult=1, eta_mult=1):
+            
+            
+            
+            eta= (
+                1.28
+                * 10**-2
+                * np.sqrt(pprofile(r))
+                / (temp_mult * tprofile(r)) ** (3 / 4)
+                * np.exp(78909 / (temp_mult * tprofile(r)))
+            ) * eta_mult
+            
+            if len(eta[np.isnan(eta)]>0):
+                idx = np.arange(len(eta))[np.isnan(eta)]
+                print(r[idx], tprofile(r[idx]), pprofile(r[idx]))
+            
+            return eta
+    else:
+        eta_use=eta_simple
+        rp=fixed_radius
+
+    pinds = np.zeros(len(ts))  # induction power as a function of time.
+    dts = np.zeros(len(ts))  # change in surface temp as a function of time.
+    teqs = np.zeros(len(ts))  # equlibrium temperature as a function of time.
+    r_profile = np.linspace(r0, rp, nr)
+
+    # Finding the y functions identically to the zero-lambda case, but with w = wp.
+    y = find_ys(wp, rp, eta_use, r0=r0, eta_mult=eta_mult, temp_mult=temp_mult)
+    coeffs = find_coeffs_lam(rp, y, lam, m, d)
+    a_vals = find_as_zeroecc(r_profile, y, coeffs) 
+
+    planet = Planet(t0=0, m0=0, ecc=0, a=a, ms=mstar)
+
+    pind_profile = np.zeros(len(r_profile))
+    teq = tstar * np.sqrt(rstar * RSOLAR / d) * (1 / 4) ** (1 / 4)
+
+    # Loop over and calculate the power at each time.
+    for i in range(len(ts)):
+
+        
+        teqs[i] = teq
+
+        p_r = pvol( # Evaluate the pvol, but with w=wp.
+            ts[i],wp, wp,r_profile, rp, a_vals, eta_use, eta_mult=eta_mult, temp_mult=temp_mult
+        )
+
+        # save the power profile for the first value in the ts array
+        if i==0:
+            pind_profile = p_r
+        pheat = scipy.integrate.simpson(p_r * r_profile**2, r_profile)
+
+        tsurf = (pheat / (4 * np.pi * SB * rp**2) + teq**4) ** (1 / 4)
+        dts[i] = tsurf - teq
+        pinds[i] = pheat
+
+    return pinds, dts, teqs, r_profile, pind_profile, eta_use(r_profile, rp)
+
 
