@@ -922,6 +922,7 @@ def find_as(r, y1s, y2s, y3s, coeffs):
 
     a_vals["a21"] = coeffs["nu210"] * reg21 + coeffs["mu210"] * img21
     a_vals["a22"] = coeffs["mu210"] * reg21 - coeffs["nu210"] * img21
+    
     a_vals["a23"] = reg22 * (-coeffs["nu221"] + coeffs["nu22m1"]) + img22 * (
         -coeffs["mu221"] + coeffs["mu22m1"]
     )
@@ -938,11 +939,11 @@ def find_as(r, y1s, y2s, y3s, coeffs):
     a_vals["a31"] = (-coeffs["nu311"] + coeffs["nu31m1"]) * reg31 + (
         -coeffs["mu311"] + coeffs["mu31m1"]
     ) * img31
-    a_vals["a32"] = (-coeffs["mu311"] + coeffs["mu31m1"]) * reg31 + (
-        coeffs["nu311"] - coeffs["nu31m1"]
-    ) * img31
-    a_vals["a33"] = (-coeffs["mu311"] - coeffs["mu31m1"]) * reg31 + (
+    a_vals["a32"] = (-coeffs["mu311"] - coeffs["mu31m1"]) * reg31 + (
         coeffs["nu311"] + coeffs["nu31m1"]
+    ) * img31
+    a_vals["a33"] = (-coeffs["mu311"] + coeffs["mu31m1"]) * reg31 + (
+        coeffs["nu311"] - coeffs["nu31m1"]
     ) * img31
     a_vals["a34"] = (coeffs["nu311"] + coeffs["nu31m1"]) * reg31 + (
         coeffs["mu311"] + coeffs["mu31m1"]
@@ -950,6 +951,7 @@ def find_as(r, y1s, y2s, y3s, coeffs):
 
     a_vals["a35"] = reg32 * coeffs["nu320"] + img32 * coeffs["mu320"]
     a_vals["a36"] = reg32 * coeffs["mu320"] - img32 * coeffs["nu320"]
+    
     a_vals["a37"] = reg32 * (coeffs["nu322"] + coeffs["nu32m2"]) + img32 * (
         coeffs["mu322"] + coeffs["mu32m2"]
     )
@@ -964,7 +966,7 @@ def find_as(r, y1s, y2s, y3s, coeffs):
     )
 
     return a_vals
-
+    
 def find_as_zeroecc(r, ys, coeffs):
     """
     find the A coefficients as defined in our paper, in the specific case that eccentricity = 0.
@@ -1032,7 +1034,7 @@ def find_as_zeroecc(r, ys, coeffs):
     return a_vals
     
     
-
+    
 def pvol(t, w, wp, r, rp, a_vals, eta_func, eta_mult=1, temp_mult=1):
     """
     Estimates the power-per-volume deposited by magnetic induction, given the A coefficients 
@@ -1050,191 +1052,96 @@ def pvol(t, w, wp, r, rp, a_vals, eta_func, eta_mult=1, temp_mult=1):
     temp_mult = multiplicative factor on temperature
     
     """
+    A11=a_vals["a11"]
+    A12=a_vals["a12"]
+    A13=a_vals["a13"]
+    A14=a_vals["a14"]
+    A15=a_vals["a15"]
+    A16=a_vals["a16"]
+    A17=a_vals["a17"]
+    A18=a_vals["a18"]
+    A19=a_vals["a19"]
+    A110=a_vals["a110"]
+    A21=a_vals["a21"]
+    A22=a_vals["a22"]
+    A23=a_vals["a23"]
+    A24=a_vals["a24"]
+    A25=a_vals["a25"]
+    A26=a_vals["a26"]
+    A31=a_vals["a31"]
+    A32=a_vals["a32"]
+    A33=a_vals["a33"]
+    A34=a_vals["a34"]
+    A35=a_vals["a35"]
+    A36=a_vals["a36"]
+    A37=a_vals["a37"]
+    A38=a_vals["a38"]
+    A39=a_vals["a39"]
+    A310=a_vals["a310"]
+ 
+    return (1/(64*eta_func(r, rp, eta_mult=eta_mult, temp_mult=temp_mult)))/r**2*MU0*(32*A11**2*w**2+96*A110**2*w**2+32*A12**2*w**2+32*A13**2*w**2+32*A14**2*w**2
+    +192*A15**2*w**2+192*A16**2*w**2+96*A17**2*w**2+96*A18**2*w**2+96*A19**2*w**2
+    +32*A31**2*w**2+36*A310**2*w**2+32*A32**2*w**2+32*A33**2*w**2+32*A34**2*w**2
+    +192*A35**2*w**2+192*A36**2*w**2+36*A37**2*w**2+36*A38**2*w**2+36*A39**2*w**2
+    +9*np.sqrt(5)*A310*A33*np.pi*w**2+9*np.sqrt(5)*A31*A37*np.pi*w**2+9*np.sqrt(5)*A34*A38*np.pi*w**2
+    +9*np.sqrt(5)*A32*A39*np.pi*w**2+64*A31**2*w*wp+72*A310**2*w*wp+64*A32**2*w*wp
+    +64*A33**2*w*wp+64*A34**2*w*wp+384*A35**2*w*wp+384*A36**2*w*wp+72*A37**2*w*wp
+    +72*A38**2*w*wp+72*A39**2*w*wp+18*np.sqrt(5)*A310*A33*np.pi*w*wp+18*np.sqrt(5)*A31*A37*np.pi*w*wp
+    +18*np.sqrt(5)*A34*A38*np.pi*w*wp+18*np.sqrt(5)*A32*A39*np.pi*w*wp+64*A21**2*wp**2+64*A22**2*wp**2
+    +96*A23**2*wp**2+96*A24**2*wp**2+96*A25**2*wp**2+96*A26**2*wp**2+32*A31**2*wp**2+36*A310**2*wp**2
+    +32*A32**2*wp**2+32*A33**2*wp**2+32*A34**2*wp**2+192*A35**2*wp**2+192*A36**2*wp**2+36*A37**2*wp**2
+    +36*A38**2*wp**2+36*A39**2*wp**2+9*np.sqrt(5)*A310*A33*np.pi*wp**2+9*np.sqrt(5)*A31*A37*np.pi*wp**2
+    +9*np.sqrt(5)*A34*A38*np.pi*wp**2+9*np.sqrt(5)*A32*A39*np.pi*wp**2
+    +32*(A11**2-3*A110**2+A12**2-A13**2-A14**2+6*A15**2-6*A16**2+3*A17**2+3*A18**2-3*A19**2)*w**2*np.cos(2*t*w)
+    +(64*A11*A31+64*A12*A32+64*A13*A33+64*A14*A34+384*A15*A35+384*A16*A36+9*np.sqrt(5)*A13*A310*np.pi
+    +9*np.sqrt(5)*A11*A37*np.pi+9*np.sqrt(5)*A14*A38*np.pi+9*np.sqrt(5)*A12*A39*np.pi)*w*(w+wp)*np.cos(t*wp)
+    +64*A21**2*wp**2*np.cos(2*t*wp)-64*A22**2*wp**2*np.cos(2*t*wp)+96*A23**2*wp**2*np.cos(2*t*wp)
+    +96*A24**2*wp**2*np.cos(2*t*wp)-96*A25**2*wp**2*np.cos(2*t*wp)-96*A26**2*wp**2*np.cos(2*t*wp)
+    +32*A31**2*w**2*np.cos(2*t*(w+wp))-36*A310**2*w**2*np.cos(2*t*(w+wp))+32*A32**2*w**2*np.cos(2*t*(w+wp))
+    -32*A33**2*w**2*np.cos(2*t*(w+wp))-32*A34**2*w**2*np.cos(2*t*(w+wp))+192*A35**2*w**2*np.cos(2*t*(w+wp))
+    -192*A36**2*w**2*np.cos(2*t*(w+wp))+36*A37**2*w**2*np.cos(2*t*(w+wp))-36*A38**2*w**2*np.cos(2*t*(w+wp))
+    +36*A39**2*w**2*np.cos(2*t*(w+wp))-9*np.sqrt(5)*A310*A33*np.pi*w**2*np.cos(2*t*(w+wp))
+    +9*np.sqrt(5)*A31*A37*np.pi*w**2*np.cos(2*t*(w+wp))-9*np.sqrt(5)*A34*A38*np.pi*w**2*np.cos(2*t*(w+wp))+9*np.sqrt(5)*A32*A39*np.pi*w**2*np.cos(2*t*(w+wp))
+    +64*A31**2*w*wp*np.cos(2*t*(w+wp))-72*A310**2*w*wp*np.cos(2*t*(w+wp))+64*A32**2*w*wp*np.cos(2*t*(w+wp))-64*A33**2*w*wp*np.cos(2*t*(w+wp))-64*A34**2*w*wp*np.cos(2*t*(w+wp))
+    +384*A35**2*w*wp*np.cos(2*t*(w+wp))-384*A36**2*w*wp*np.cos(2*t*(w+wp))+72*A37**2*w*wp*np.cos(2*t*(w+wp))-72*A38**2*w*wp*np.cos(2*t*(w+wp))
+    +72*A39**2*w*wp*np.cos(2*t*(w+wp))-18*np.sqrt(5)*A310*A33*np.pi*w*wp*np.cos(2*t*(w+wp))
+    +18*np.sqrt(5)*A31*A37*np.pi*w*wp*np.cos(2*t*(w+wp))-18*np.sqrt(5)*A34*A38*np.pi*w*wp*np.cos(2*t*(w+wp))
+    +18*np.sqrt(5)*A32*A39*np.pi*w*wp*np.cos(2*t*(w+wp))
+    +32*A31**2*wp**2*np.cos(2*t*(w+wp))-36*A310**2*wp**2*np.cos(2*t*(w+wp))
+    +32*A32**2*wp**2*np.cos(2*t*(w+wp))-32*A33**2*wp**2*np.cos(2*t*(w+wp))-32*A34**2*wp**2*np.cos(2*t*(w+wp))
+    +192*A35**2*wp**2*np.cos(2*t*(w+wp))-192*A36**2*wp**2*np.cos(2*t*(w+wp))+36*A37**2*wp**2*np.cos(2*t*(w+wp))-36*A38**2*wp**2*np.cos(2*t*(w+wp))
+    +36*A39**2*wp**2*np.cos(2*t*(w+wp))-9*np.sqrt(5)*A310*A33*np.pi*wp**2*np.cos(2*t*(w+wp))
+    +9*np.sqrt(5)*A31*A37*np.pi*wp**2*np.cos(2*t*(w+wp))-9*np.sqrt(5)*A34*A38*np.pi*wp**2*np.cos(2*t*(w+wp))+9*np.sqrt(5)*A32*A39*np.pi*wp**2*np.cos(2*t*(w+wp))
+    +64*A11*A31*w**2*np.cos(t*(2*w+wp))+64*A12*A32*w**2*np.cos(t*(2*w+wp))-64*A13*A33*w**2*np.cos(t*(2*w+wp))-64*A14*A34*w**2*np.cos(t*(2*w+wp))
+    +384*A15*A35*w**2*np.cos(t*(2*w+wp))-384*A16*A36*w**2*np.cos(t*(2*w+wp))-9*np.sqrt(5)*A13*A310*np.pi*w**2*np.cos(t*(2*w+wp))
+    +9*np.sqrt(5)*A11*A37*np.pi*w**2*np.cos(t*(2*w+wp))-9*np.sqrt(5)*A14*A38*np.pi*w**2*np.cos(t*(2*w+wp))+9*np.sqrt(5)*A12*A39*np.pi*w**2*np.cos(t*(2*w+wp))
+    +64*A11*A31*w*wp*np.cos(t*(2*w+wp))+64*A12*A32*w*wp*np.cos(t*(2*w+wp))-64*A13*A33*w*wp*np.cos(t*(2*w+wp))-64*A14*A34*w*wp*np.cos(t*(2*w+wp))
+    +384*A15*A35*w*wp*np.cos(t*(2*w+wp))-384*A16*A36*w*wp*np.cos(t*(2*w+wp))-9*np.sqrt(5)*A13*A310*np.pi*w*wp*np.cos(t*(2*w+wp))
+    +9*np.sqrt(5)*A11*A37*np.pi*w*wp*np.cos(t*(2*w+wp))-9*np.sqrt(5)*A14*A38*np.pi*w*wp*np.cos(t*(2*w+wp))+9*np.sqrt(5)*A12*A39*np.pi*w*wp*np.cos(t*(2*w+wp))
+    +64*A11*A13*w**2*np.sin(2*t*w)+64*A12*A14*w**2*np.sin(2*t*w)+384*A15*A16*w**2*np.sin(2*t*w)+192*A110*A18*w**2*np.sin(2*t*w)
+    +192*A17*A19*w**2*np.sin(2*t*w)-64*A13*A31*w**2*np.sin(t*wp)-64*A14*A32*w**2*np.sin(t*wp)+64*A11*A33*w**2*np.sin(t*wp)
+    +64*A12*A34*w**2*np.sin(t*wp)-384*A16*A35*w**2*np.sin(t*wp)
+    +384*A15*A36*w**2*np.sin(t*wp)+9*np.sqrt(5)*A11*A310*np.pi*w**2*np.sin(t*wp)-9*np.sqrt(5)*A13*A37*np.pi*w**2*np.sin(t*wp)
+    +9*np.sqrt(5)*A12*A38*np.pi*w**2*np.sin(t*wp)-9*np.sqrt(5)*A14*A39*np.pi*w**2*np.sin(t*wp)-64*A13*A31*w*wp*np.sin(t*wp)-64*A14*A32*w*wp*np.sin(t*wp)
+    +64*A11*A33*w*wp*np.sin(t*wp)
+    +64*A12*A34*w*wp*np.sin(t*wp)-384*A16*A35*w*wp*np.sin(t*wp)+384*A15*A36*w*wp*np.sin(t*wp)
+    +9*np.sqrt(5)*A11*A310*np.pi*w*wp*np.sin(t*wp)-9*np.sqrt(5)*A13*A37*np.pi*w*wp*np.sin(t*wp)
+    +9*np.sqrt(5)*A12*A38*np.pi*w*wp*np.sin(t*wp)-9*np.sqrt(5)*A14*A39*np.pi*w*wp*np.sin(t*wp)+128*A21*A22*wp**2*np.sin(2*t*wp)+192*A23*A25*wp**2*np.sin(2*t*wp)
+    +192*A24*A26*wp**2*np.sin(2*t*wp)+64*A31*A33*w**2*np.sin(2*t*(w+wp))+64*A32*A34*w**2*np.sin(2*t*(w+wp))+384*A35*A36*w**2*np.sin(2*t*(w+wp))+72*A310*A37*w**2*np.sin(2*t*(w+wp))
+    +72*A38*A39*w**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A31*A310*np.pi*w**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A33*A37*np.pi*w**2*np.sin(2*t*(w+wp))
+    +9*np.sqrt(5)*A32*A38*np.pi*w**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A34*A39*np.pi*w**2*np.sin(2*t*(w+wp))+128*A31*A33*w*wp*np.sin(2*t*(w+wp))+128*A32*A34*w*wp*np.sin(2*t*(w+wp))
+    +768*A35*A36*w*wp*np.sin(2*t*(w+wp))+144*A310*A37*w*wp*np.sin(2*t*(w+wp))+144*A38*A39*w*wp*np.sin(2*t*(w+wp))+18*np.sqrt(5)*A31*A310*np.pi*w*wp*np.sin(2*t*(w+wp))
+    +18*np.sqrt(5)*A33*A37*np.pi*w*wp*np.sin(2*t*(w+wp))+18*np.sqrt(5)*A32*A38*np.pi*w*wp*np.sin(2*t*(w+wp))+18*np.sqrt(5)*A34*A39*np.pi*w*wp*np.sin(2*t*(w+wp))
+    +64*A31*A33*wp**2*np.sin(2*t*(w+wp))+64*A32*A34*wp**2*np.sin(2*t*(w+wp))+384*A35*A36*wp**2*np.sin(2*t*(w+wp))+72*A310*A37*wp**2*np.sin(2*t*(w+wp))
+    +72*A38*A39*wp**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A31*A310*np.pi*wp**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A33*A37*np.pi*wp**2*np.sin(2*t*(w+wp))
+    +9*np.sqrt(5)*A32*A38*np.pi*wp**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A34*A39*np.pi*wp**2*np.sin(2*t*(w+wp))+64*A13*A31*w**2*np.sin(t*(2*w+wp))+64*A14*A32*w**2*np.sin(t*(2*w+wp))
+    +64*A11*A33*w**2*np.sin(t*(2*w+wp))+64*A12*A34*w**2*np.sin(t*(2*w+wp))+384*A16*A35*w**2*np.sin(t*(2*w+wp))+384*A15*A36*w**2*np.sin(t*(2*w+wp))
+    +9*np.sqrt(5)*A11*A310*np.pi*w**2*np.sin(t*(2*w+wp))+9*np.sqrt(5)*A13*A37*np.pi*w**2*np.sin(t*(2*w+wp))+9*np.sqrt(5)*A12*A38*np.pi*w**2*np.sin(t*(2*w+wp))
+    +9*np.sqrt(5)*A14*A39*np.pi*w**2*np.sin(t*(2*w+wp))+64*A13*A31*w*wp*np.sin(t*(2*w+wp))+64*A14*A32*w*wp*np.sin(t*(2*w+wp))+64*A11*A33*w*wp*np.sin(t*(2*w+wp))
+    +64*A12*A34*w*wp*np.sin(t*(2*w+wp))+384*A16*A35*w*wp*np.sin(t*(2*w+wp))+384*A15*A36*w*wp*np.sin(t*(2*w+wp))+9*np.sqrt(5)*A11*A310*np.pi*w*wp*np.sin(t*(2*w+wp))
+    +9*np.sqrt(5)*A13*A37*np.pi*w*wp*np.sin(t*(2*w+wp))+9*np.sqrt(5)*A12*A38*np.pi*w*wp*np.sin(t*(2*w+wp))+9*np.sqrt(5)*A14*A39*np.pi*w*wp*np.sin(t*(2*w+wp)))
 
 
-    return (
-        MU0
-        * w**2
-        / eta_func(r, rp, eta_mult=eta_mult, temp_mult=temp_mult)
-        / r**2
-        * (
-            a_vals["a11"] ** 2 * np.cos(t * w) ** 2
-            + a_vals["a12"] ** 2 * np.cos(t * w) ** 2
-            + 6 * a_vals["a15"] ** 2 * np.cos(t * w) ** 2
-            + 3 * a_vals["a17"] ** 2 * np.cos(t * w) ** 2
-            + 3 * a_vals["a18"] ** 2 * np.cos(t * w) ** 2
-            + 2 * a_vals["a11"] * a_vals["a31"] * np.cos(t * w) ** 2 * np.cos(t * wp)
-            + 2 * a_vals["a12"] * a_vals["a32"] * np.cos(t * w) ** 2 * np.cos(t * wp)
-            + 12 * a_vals["a15"] * a_vals["a35"] * np.cos(t * w) ** 2 * np.cos(t * wp)
-            + 6 * a_vals["a17"] * a_vals["a37"] * np.cos(t * w) ** 2 * np.cos(t * wp)
-            + 6 * a_vals["a18"] * a_vals["a39"] * np.cos(t * w) ** 2 * np.cos(t * wp)
-            + 2 * a_vals["a21"] ** 2 * np.cos(t * wp) ** 2
-            + 3 * a_vals["a23"] ** 2 * np.cos(t * wp) ** 2
-            + 3 * a_vals["a24"] ** 2 * np.cos(t * wp) ** 2
-            + a_vals["a31"] ** 2 * np.cos(t * w) ** 2 * np.cos(t * wp) ** 2
-            + a_vals["a32"] ** 2 * np.cos(t * w) ** 2 * np.cos(t * wp) ** 2
-            + 6 * a_vals["a35"] ** 2 * np.cos(t * w) ** 2 * np.cos(t * wp) ** 2
-            + 3 * a_vals["a37"] ** 2 * np.cos(t * w) ** 2 * np.cos(t * wp) ** 2
-            + 3 * a_vals["a39"] ** 2 * np.cos(t * w) ** 2 * np.cos(t * wp) ** 2
-            + 2 * a_vals["a11"] * a_vals["a33"] * np.cos(t * w) ** 2 * np.sin(t * w)
-            + 2
-            * a_vals["a31"]
-            * a_vals["a33"]
-            * np.cos(t * w) ** 2
-            * np.cos(t * wp)
-            * np.sin(t * w)
-            + 3 * a_vals["a110"] ** 2 * np.sin(t * w) ** 2
-            + a_vals["a13"] ** 2 * np.sin(t * w) ** 2
-            + a_vals["a14"] ** 2 * np.sin(t * w) ** 2
-            + 6 * a_vals["a16"] ** 2 * np.sin(t * w) ** 2
-            + 3 * a_vals["a19"] ** 2 * np.sin(t * w) ** 2
-            + 6 * a_vals["a19"] * a_vals["a310"] * np.cos(t * wp) * np.sin(t * w) ** 2
-            + 2 * a_vals["a14"] * a_vals["a34"] * np.cos(t * wp) * np.sin(t * w) ** 2
-            + 12 * a_vals["a16"] * a_vals["a36"] * np.cos(t * wp) * np.sin(t * w) ** 2
-            + 6 * a_vals["a110"] * a_vals["a38"] * np.cos(t * wp) * np.sin(t * w) ** 2
-            + 3 * a_vals["a310"] ** 2 * np.cos(t * wp) ** 2 * np.sin(t * w) ** 2
-            + a_vals["a34"] ** 2 * np.cos(t * wp) ** 2 * np.sin(t * w) ** 2
-            + 6 * a_vals["a36"] ** 2 * np.cos(t * wp) ** 2 * np.sin(t * w) ** 2
-            + 3 * a_vals["a38"] ** 2 * np.cos(t * wp) ** 2 * np.sin(t * w) ** 2
-            + a_vals["a11"] * a_vals["a13"] * np.sin(2 * t * w)
-            + a_vals["a12"] * a_vals["a14"] * np.sin(2 * t * w)
-            + 6 * a_vals["a15"] * a_vals["a16"] * np.sin(2 * t * w)
-            + 3 * a_vals["a110"] * a_vals["a18"] * np.sin(2 * t * w)
-            + 3 * a_vals["a17"] * a_vals["a19"] * np.sin(2 * t * w)
-            + a_vals["a13"] * a_vals["a31"] * np.cos(t * wp) * np.sin(2 * t * w)
-            + 3 * a_vals["a17"] * a_vals["a310"] * np.cos(t * wp) * np.sin(2 * t * w)
-            + a_vals["a14"] * a_vals["a32"] * np.cos(t * wp) * np.sin(2 * t * w)
-            + a_vals["a12"] * a_vals["a34"] * np.cos(t * wp) * np.sin(2 * t * w)
-            + 6 * a_vals["a16"] * a_vals["a35"] * np.cos(t * wp) * np.sin(2 * t * w)
-            + 6 * a_vals["a15"] * a_vals["a36"] * np.cos(t * wp) * np.sin(2 * t * w)
-            + 3 * a_vals["a19"] * a_vals["a37"] * np.cos(t * wp) * np.sin(2 * t * w)
-            + 3 * a_vals["a18"] * a_vals["a38"] * np.cos(t * wp) * np.sin(2 * t * w)
-            + 3 * a_vals["a110"] * a_vals["a39"] * np.cos(t * wp) * np.sin(2 * t * w)
-            + a_vals["a32"] * a_vals["a34"] * np.cos(t * wp) ** 2 * np.sin(2 * t * w)
-            + 6
-            * a_vals["a35"]
-            * a_vals["a36"]
-            * np.cos(t * wp) ** 2
-            * np.sin(2 * t * w)
-            + 3
-            * a_vals["a310"]
-            * a_vals["a37"]
-            * np.cos(t * wp) ** 2
-            * np.sin(2 * t * w)
-            + 3
-            * a_vals["a38"]
-            * a_vals["a39"]
-            * np.cos(t * wp) ** 2
-            * np.sin(2 * t * w)
-            + a_vals["a13"] * a_vals["a33"] * np.sin(t * w) * np.sin(2 * t * w)
-            + 1 / 4 * a_vals["a33"] ** 2 * np.sin(2 * t * w) ** 2
-            + 6 * a_vals["a17"] * a_vals["a310"] * np.cos(t * w) ** 2 * np.sin(t * wp)
-            + 2 * a_vals["a11"] * a_vals["a33"] * np.cos(t * w) ** 2 * np.sin(t * wp)
-            + 2 * a_vals["a12"] * a_vals["a34"] * np.cos(t * w) ** 2 * np.sin(t * wp)
-            + 12 * a_vals["a15"] * a_vals["a36"] * np.cos(t * w) ** 2 * np.sin(t * wp)
-            + 6 * a_vals["a18"] * a_vals["a38"] * np.cos(t * w) ** 2 * np.sin(t * wp)
-            + 2
-            * a_vals["a33"] ** 2
-            * np.cos(t * w) ** 2
-            * np.sin(t * w)
-            * np.sin(t * wp)
-            - 2 * a_vals["a13"] * a_vals["a31"] * np.sin(t * w) ** 2 * np.sin(t * wp)
-            - 2 * a_vals["a14"] * a_vals["a32"] * np.sin(t * w) ** 2 * np.sin(t * wp)
-            - 12 * a_vals["a16"] * a_vals["a35"] * np.sin(t * w) ** 2 * np.sin(t * wp)
-            - 6 * a_vals["a19"] * a_vals["a37"] * np.sin(t * w) ** 2 * np.sin(t * wp)
-            - 6 * a_vals["a110"] * a_vals["a39"] * np.sin(t * w) ** 2 * np.sin(t * wp)
-            - a_vals["a11"] * a_vals["a31"] * np.sin(2 * t * w) * np.sin(t * wp)
-            + 3 * a_vals["a19"] * a_vals["a310"] * np.sin(2 * t * w) * np.sin(t * wp)
-            - a_vals["a12"] * a_vals["a32"] * np.sin(2 * t * w) * np.sin(t * wp)
-            + a_vals["a13"] * a_vals["a33"] * np.sin(2 * t * w) * np.sin(t * wp)
-            + a_vals["a14"] * a_vals["a34"] * np.sin(2 * t * w) * np.sin(t * wp)
-            - 6 * a_vals["a15"] * a_vals["a35"] * np.sin(2 * t * w) * np.sin(t * wp)
-            + 6 * a_vals["a16"] * a_vals["a36"] * np.sin(2 * t * w) * np.sin(t * wp)
-            - 3 * a_vals["a17"] * a_vals["a37"] * np.sin(2 * t * w) * np.sin(t * wp)
-            + 3 * a_vals["a110"] * a_vals["a38"] * np.sin(2 * t * w) * np.sin(t * wp)
-            - 3 * a_vals["a18"] * a_vals["a39"] * np.sin(2 * t * w) * np.sin(t * wp)
-            - a_vals["a31"]
-            * a_vals["a33"]
-            * np.sin(t * w)
-            * np.sin(2 * t * w)
-            * np.sin(t * wp)
-            + 2 * a_vals["a22"] ** 2 * np.sin(t * wp) ** 2
-            + 3 * a_vals["a25"] ** 2 * np.sin(t * wp) ** 2
-            + 3 * a_vals["a26"] ** 2 * np.sin(t * wp) ** 2
-            + 3 * a_vals["a310"] ** 2 * np.cos(t * w) ** 2 * np.sin(t * wp) ** 2
-            + a_vals["a33"] ** 2 * np.cos(t * w) ** 2 * np.sin(t * wp) ** 2
-            + a_vals["a34"] ** 2 * np.cos(t * w) ** 2 * np.sin(t * wp) ** 2
-            + 6 * a_vals["a36"] ** 2 * np.cos(t * w) ** 2 * np.sin(t * wp) ** 2
-            + 3 * a_vals["a38"] ** 2 * np.cos(t * w) ** 2 * np.sin(t * wp) ** 2
-            + a_vals["a31"] ** 2 * np.sin(t * w) ** 2 * np.sin(t * wp) ** 2
-            + a_vals["a32"] ** 2 * np.sin(t * w) ** 2 * np.sin(t * wp) ** 2
-            + 6 * a_vals["a35"] ** 2 * np.sin(t * w) ** 2 * np.sin(t * wp) ** 2
-            + 3 * a_vals["a37"] ** 2 * np.sin(t * w) ** 2 * np.sin(t * wp) ** 2
-            + 3 * a_vals["a39"] ** 2 * np.sin(t * w) ** 2 * np.sin(t * wp) ** 2
-            - a_vals["a31"] * a_vals["a33"] * np.sin(2 * t * w) * np.sin(t * wp) ** 2
-            - a_vals["a32"] * a_vals["a34"] * np.sin(2 * t * w) * np.sin(t * wp) ** 2
-            - 6
-            * a_vals["a35"]
-            * a_vals["a36"]
-            * np.sin(2 * t * w)
-            * np.sin(t * wp) ** 2
-            - 3
-            * a_vals["a310"]
-            * a_vals["a37"]
-            * np.sin(2 * t * w)
-            * np.sin(t * wp) ** 2
-            - 3
-            * a_vals["a38"]
-            * a_vals["a39"]
-            * np.sin(2 * t * w)
-            * np.sin(t * wp) ** 2
-            + 2 * a_vals["a21"] * a_vals["a22"] * np.sin(2 * t * wp)
-            + 3 * a_vals["a23"] * a_vals["a25"] * np.sin(2 * t * wp)
-            + 3 * a_vals["a24"] * a_vals["a26"] * np.sin(2 * t * wp)
-            + a_vals["a31"] * a_vals["a33"] * np.cos(t * w) ** 2 * np.sin(2 * t * wp)
-            + a_vals["a32"] * a_vals["a34"] * np.cos(t * w) ** 2 * np.sin(2 * t * wp)
-            + 6
-            * a_vals["a35"]
-            * a_vals["a36"]
-            * np.cos(t * w) ** 2
-            * np.sin(2 * t * wp)
-            + 3
-            * a_vals["a310"]
-            * a_vals["a37"]
-            * np.cos(t * w) ** 2
-            * np.sin(2 * t * wp)
-            + 3
-            * a_vals["a38"]
-            * a_vals["a39"]
-            * np.cos(t * w) ** 2
-            * np.sin(2 * t * wp)
-            - a_vals["a32"] * a_vals["a34"] * np.sin(t * w) ** 2 * np.sin(2 * t * wp)
-            - 6
-            * a_vals["a35"]
-            * a_vals["a36"]
-            * np.sin(t * w) ** 2
-            * np.sin(2 * t * wp)
-            - 3
-            * a_vals["a310"]
-            * a_vals["a37"]
-            * np.sin(t * w) ** 2
-            * np.sin(2 * t * wp)
-            - 3
-            * a_vals["a38"]
-            * a_vals["a39"]
-            * np.sin(t * w) ** 2
-            * np.sin(2 * t * wp)
-            - 1 / 2 * a_vals["a31"] ** 2 * np.sin(2 * t * w) * np.sin(2 * t * wp)
-            + 3 / 2 * a_vals["a310"] ** 2 * np.sin(2 * t * w) * np.sin(2 * t * wp)
-            - 1 / 2 * a_vals["a32"] ** 2 * np.sin(2 * t * w) * np.sin(2 * t * wp)
-            + 1 / 2 * a_vals["a34"] ** 2 * np.sin(2 * t * w) * np.sin(2 * t * wp)
-            - 3 * a_vals["a35"] ** 2 * np.sin(2 * t * w) * np.sin(2 * t * wp)
-            + 3 * a_vals["a36"] ** 2 * np.sin(2 * t * w) * np.sin(2 * t * wp)
-            - 3 / 2 * a_vals["a37"] ** 2 * np.sin(2 * t * w) * np.sin(2 * t * wp)
-            + 3 / 2 * a_vals["a38"] ** 2 * np.sin(2 * t * w) * np.sin(2 * t * wp)
-            - 3 / 2 * a_vals["a39"] ** 2 * np.sin(2 * t * w) * np.sin(2 * t * wp)
-        )
-    )
     
 def generate_profile(mpl=1,teq=600, cmf=0.01, log_feh=0, co=0.55, tint=100, fixed_radius=None):
     """
