@@ -443,13 +443,123 @@ def eta_simple(r, rp, eta_mult=1, temp_mult=1):
     return 10**3 * np.e ** (25 * (r / rp) ** 2) * eta_mult
 
 
+def find_coeffs_zeroecc(rp, y1s, alpha, m, a):
 
-def find_coeffs(rp, y1s, y2s, y3s, alpha, m, a, e):
+    data = {}
+
+    # l=1, m=1 case.  Standard settings.
+
+    reg11 = y1s["y11"](rp)
+    img11 = y1s["y12"](rp)
+    reg11dot = y1s["y13"](rp)
+    img11dot = y1s["y14"](rp)
+
+    # mu11, mu1m1, nu11, nu1m1, a1, a2, a3, a4
+    eqns = np.array(
+        [
+            [ -img11, img11, -reg11, reg11, 1 / rp * np.sqrt(8 * np.pi / 3) * 1, 0, 0, 0,],
+            [ reg11, -reg11, -img11, img11, 0, 1 / rp * np.sqrt(8 * np.pi / 3) * 1, 0, 0,],
+            [ -reg11, -reg11, img11, img11, 0, 0, 1 / rp * np.sqrt(8 * np.pi / 3) * 1, 0,],
+            [ -img11, -img11,-reg11,-reg11, 0, 0, 0, 1 / rp * np.sqrt(8 * np.pi / 3) * 1,],
+            [ -img11dot, img11dot, -reg11dot, reg11dot, -1 / rp**2 * np.sqrt(8 * np.pi / 3) * 1, 0, 0, 0,],
+            [ reg11dot, -reg11dot, -img11dot, img11dot, 0, -1 / rp**2 * np.sqrt(8 * np.pi / 3) * 1, 0, 0,],
+            [ -reg11dot, -reg11dot, img11dot, img11dot, 0, 0, -1 / rp**2 * np.sqrt(8 * np.pi / 3) * 1, 0,],
+            [ -img11dot, -img11dot,-reg11dot,-reg11dot, 0, 0, 0, -1 / rp**2 * np.sqrt(8 * np.pi / 3) * 1,],
+        ]
+    )
+
+    sols = np.array(
+        [
+            np.sqrt(8 * np.pi / 3) * 2 * m * np.sin(alpha) * rp**2 / (8 * np.pi * a**3) * 1,
+            0,
+            0,
+            np.sqrt(8 * np.pi / 3) * m * np.sin(alpha) * rp**2 / (8 * np.pi * a**3) * 1,
+            np.sqrt(8 * np.pi / 3) * 4 * m * np.sin(alpha) * rp / (8 * np.pi * a**3) * 1,
+            0,
+            0,
+            np.sqrt(8 * np.pi / 3) * 2 * m * np.sin(alpha) * rp / (8 * np.pi * a**3 * 1),
+        ]
+    )
+
+    x = np.linalg.solve(eqns, sols)
+
+    data["mu111"] = x[0]
+    data["mu11m1"] = x[1]
+    data["nu111"] = x[2]
+    data["nu11m1"] = x[3]
+
+    # l=2, m=0 case.
+    reg12 = y1s["y21"](rp)
+    img12 = y1s["y22"](rp)
+    reg12dot = y1s["y23"](rp)
+    img12dot = y1s["y24"](rp)
+
+    # mu120, nu120, beta1, beta2
+    eqns = np.array(
+        [
+            [-img12, -reg12, -np.sqrt(4 * np.pi / 5) * (1 / rp**2), 0],
+            [reg12, -img12, 0, -np.sqrt(4 * np.pi / 5) * (1 / rp**2)],
+            [-img12dot, -reg12dot, 2 * np.sqrt(4 * np.pi / 5) * (1 / rp**3), 0],
+            [reg12dot, -img12dot, 0, 2 * np.sqrt(4 * np.pi / 5) * (1 / rp**3)],
+        ]
+    )
+
+    sols = np.array(
+        [
+            np.sqrt(4 * np.pi / 5) * m * np.sin(alpha) * rp**3 / 8 / np.pi / a**4,
+            0,
+            3 * np.sqrt(4 * np.pi / 5) * m * np.sin(alpha) * rp**2 / 8 / np.pi / a**4,
+            0,
+        ]
+    )
+
+    x = np.linalg.solve(eqns, sols)
+
+    data["mu120"] = x[0]
+    data["nu120"] = x[1]
+
+    # mu122, mu12m2, nu122, nu12m2, b1, b2, b3, b4
+    eqns = np.array(
+        [
+            [-img12, -img12, -reg12, -reg12, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0, 0, 0,],
+            [ reg12,  reg12, -img12, -img12, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0, 0,],
+            [-reg12,  reg12,  img12, -img12, 0, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0,],
+            [-img12,  img12, -reg12,  reg12, 0, 0, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2,],
+            [-img12dot,-img12dot,-reg12dot,-reg12dot, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0, 0, 0,],
+            [ reg12dot, reg12dot,-img12dot,-img12dot, 0, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0, 0,],
+            [-reg12dot, reg12dot, img12dot,-img12dot, 0, 0, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0,],
+            [-img12dot, img12dot,-reg12dot, reg12dot, 0, 0, 0, 4 * 2 ** np.sqrt(6 * np.pi / 5) * 1 / rp**3,],
+        ]
+    )
+    sols = np.array(
+        [
+            -2 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**3 / 8 / np.pi / a**4,
+            0,
+            0,
+            -4 / 3 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**3 / 8 / np.pi / a**4,
+            -3 * 2 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**2 / 8 / np.pi / a**4,
+            0,
+            0,
+            -3 * 4 / 3 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**2 / 8 / np.pi / a**4,
+        ]
+    )
+    x = np.linalg.solve(eqns, sols)
+
+    data["mu122"] = x[0]
+    data["mu12m2"] = x[1]
+    data["nu122"] = x[2]
+    data["nu12m2"] = x[3]
+
+    return data
+
+
+def find_coeffs(rp, y1s, y2s, y3s, y4s, alpha, m, a, e):
     """find the mu and nu coefficients defined in Laine+ 2008.
+    This considers the eccentric case, described in section 3.4 of the paper.
     
     inputs:
     rp = radius of planet (m)
-    y1s, y2s, y3s = outputs of find_ys for the i=1, i=2, and i=3 cases as defined in 
+    y1s, y2s, y3s, y4s = outputs of find_ys for the i=1, i=2, i=3, and i=4 cases as defined in 
     section 3.4.2 of the paper.
     alpha = inclination angle (radians)
     a = planet distance from star (m)
@@ -467,7 +577,7 @@ def find_coeffs(rp, y1s, y2s, y3s, alpha, m, a, e):
     # mu210, nu210, eta1, eta2
     eqns = np.array(
         [
-            [reg21, -img21, -1 / rp * np.sqrt(4 * np.pi / 3) , 0],
+            [reg21, -img21, -1 / rp * np.sqrt(4 * np.pi / 3), 0],
             [-img21, -reg21, 0, -1 / rp * np.sqrt(4 * np.pi / 3)],
             [ reg21dot, -img21dot, 1 / rp**2 * np.sqrt(4 * np.pi / 3), 0],
             [-img21dot, -reg21dot, 0, 1 / rp**2 * np.sqrt(4 * np.pi / 3)],
@@ -530,37 +640,37 @@ def find_coeffs(rp, y1s, y2s, y3s, alpha, m, a, e):
     data["nu111"] = x[2]
     data["nu11m1"] = x[3]
 
-    # Now, the cross terms...
+    # Now, the cross terms.  Start with i=3
 
     reg31 = y3s["y11"](rp)
     img31 = y3s["y12"](rp)
     reg31dot = y3s["y13"](rp)
     img31dot = y3s["y14"](rp)
 
-    # mu311, mu31m1, nu311, nu31m1, xi1, xi2, xi3, xi4
+    # mu311, mu31m1, nu311, nu31m1, xi2, xi2, xi6, xi8
     eqns = np.array(
         [
-            [img31, -img31, reg31, -reg31, -np.sqrt(8 * np.pi / 3) * 1 / rp, 0, 0, 0],
-            [-reg31, reg31, img31, -img31, 0, -np.sqrt(8 * np.pi / 3) * 1 / rp, 0, 0],
-            [reg31, reg31, -img31, -img31, 0, 0, -np.sqrt(8 * np.pi / 3) * 1 / rp, 0],
-            [img31, img31, reg31,   reg31, 0, 0, 0, -np.sqrt(8 * np.pi / 3) * 1 / rp],
-            [img31dot, -img31dot, reg31dot, -reg31dot, np.sqrt(8 * np.pi / 3) * 1 / rp**2, 0, 0, 0,],
-            [-reg31dot, reg31dot, img31dot, -img31dot, 0, np.sqrt(8 * np.pi / 3) * 1 / rp**2, 0, 0,],
-            [reg31dot, reg31dot, -img31dot, -img31dot, 0, 0, np.sqrt(8 * np.pi / 3) * 1 / rp**2, 0,],
-            [img31dot, img31dot,  reg31dot,  reg31dot, 0, 0, 0, np.sqrt(8 * np.pi / 3) * 1 / rp**2,],
+            [-reg31, reg31, img31, -img31, -np.sqrt(8 * np.pi / 3) * 1 / rp, 0, 0, 0],
+            [img31, -img31, reg31, -reg31, 0, -np.sqrt(8 * np.pi / 3) * 1 / rp, 0, 0],
+            [img31, img31, reg31, reg31, 0, 0, -np.sqrt(8 * np.pi / 3) * 1 / rp, 0],
+            [reg31, reg31, -img31, -img31,0, 0, 0, -np.sqrt(8 * np.pi / 3) * 1 / rp],
+            [-reg31dot, reg31dot, img31dot, -img31dot, np.sqrt(8 * np.pi / 3) * 1 / rp**2, 0, 0, 0],
+            [img31dot, -img31dot, reg31dot, -reg31dot, 0, np.sqrt(8 * np.pi / 3) * 1 / rp**2, 0, 0],
+            [img31dot, img31dot, reg31dot, reg31dot, 0, 0, np.sqrt(8 * np.pi / 3) * 1 / rp**2, 0],
+            [reg31dot, reg31dot, -img31dot, -img31dot,0, 0, 0, np.sqrt(8 * np.pi / 3) * 1 / rp**2],            
         ]
     )
 
     sols = np.array(
         [
-            -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) * 6 * e,
+            -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) *  e,
             0,
             0,
-            -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) * 3 * e,
-            -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3) * 6 * e,
+            -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) * 1/2 * e,
+            -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3)  * e,
             0,
             0,
-            -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3) * 3 * e,
+            -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3) * 1/2 * e,
         ]
     )
 
@@ -571,173 +681,48 @@ def find_coeffs(rp, y1s, y2s, y3s, alpha, m, a, e):
     data["nu311"] = x[2]
     data["nu31m1"] = x[3]
 
-    # l=2, m=0 case, wp terms.
-    reg12 = y1s["y21"](rp)
-    img12 = y1s["y22"](rp)
-    reg12dot = y1s["y23"](rp)
-    img12dot = y1s["y24"](rp)
 
-    # mu120, nu120, beta1, beta2
+    # Now, do i=4
+
+    reg41 = y4s["y11"](rp)
+    img41 = y4s["y12"](rp)
+    reg41dot = y4s["y13"](rp)
+    img41dot = y4s["y14"](rp)
+
+    # mu411, mu41m1, nu411, nu41m1, xi1, xi3, xi5, xi7
     eqns = np.array(
         [
-            [-img12, -reg12, -np.sqrt(4 * np.pi / 5) * (1 / rp**2), 0],
-            [reg12, -img12, 0, -np.sqrt(4 * np.pi / 5) * (1 / rp**2)],
-            [-img12dot, -reg12dot, 2 * np.sqrt(4 * np.pi / 5) * (1 / rp**3), 0],
-            [reg12dot, -img12dot, 0, 2 * np.sqrt(4 * np.pi / 5) * (1 / rp**3)],
+            [-reg41, reg41, img41, -img41, -np.sqrt(8 * np.pi / 3) * 1 / rp, 0, 0, 0],
+            [img41, -img41, reg41, -reg41, 0, -np.sqrt(8 * np.pi / 3) * 1 / rp, 0, 0],
+            [img41, img41, reg41, reg41, 0, 0, -np.sqrt(8 * np.pi / 3) * 1 / rp, 0],
+            [reg41, reg41, -img41, -img41,0, 0, 0, -np.sqrt(8 * np.pi / 3) * 1 / rp],
+            [-reg41dot, reg41dot, img41dot, -img41dot, np.sqrt(8 * np.pi / 3) * 1 / rp**2, 0, 0, 0],
+            [img41dot, -img41dot, reg41dot, -reg41dot, 0, np.sqrt(8 * np.pi / 3) * 1 / rp**2, 0, 0],
+            [img41dot, img41dot, reg41dot, reg41dot, 0, 0, np.sqrt(8 * np.pi / 3) * 1 / rp**2, 0],
+            [reg41dot, reg41dot, -img41dot, -img41dot,0, 0, 0, np.sqrt(8 * np.pi / 3) * 1 / rp**2],            
         ]
     )
 
     sols = np.array(
         [
-            np.sqrt(4 * np.pi / 5) * m * np.sin(alpha) * rp**3 / 8 / np.pi / a**4,
+            -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) *  5*e,
             0,
-            3 * np.sqrt(4 * np.pi / 5) * m * np.sin(alpha) * rp**2 / 8 / np.pi / a**4,
             0,
+            -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) * 5/2 * e,
+            -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3)  * 5*e,
+            0,
+            0,
+            -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3) * 5/2 * e,
         ]
     )
 
     x = np.linalg.solve(eqns, sols)
 
-    data["mu120"] = x[0]
-    data["nu120"] = x[1]
+    data["mu411"] = x[0]
+    data["mu41m1"] = x[1]
+    data["nu411"] = x[2]
+    data["nu41m1"] = x[3]
 
-    # l=2, m=0 case. wp w terms.
-    reg32 = y3s["y21"](rp)
-    img32 = y3s["y22"](rp)
-    reg32dot = y3s["y23"](rp)
-    img32dot = y3s["y24"](rp)
-
-    # mu320, nu320, zeta1, zeta2
-    eqns = np.array(
-        [
-            [-img31, -reg32, -np.sqrt(4 * np.pi / 5) * 1 / rp**2, 0],
-            [reg32, -img32, 0, -np.sqrt(4 * np.pi / 5) * 1 / rp**2],
-            [-img31dot, -reg32dot, 2 * np.sqrt(4 * np.pi / 5) * 1 / rp**3, 0],
-            [reg32dot, -img32dot, 0, 2 * np.sqrt(4 * np.pi / 5) * 1 / rp**3],
-        ]
-    )
-
-    sols = np.array(
-        [
-            4 * e * np.sqrt(4 * np.pi / 5) * m * np.sin(alpha) * rp**3 / 8 / np.pi / a**4,
-            0,
-            12 * e * np.sqrt(4 * np.pi / 5) * m * np.sin(alpha) * rp**2 / 8 / np.pi / a**4,
-            0,
-        ]
-    )
-
-    x = np.linalg.solve(eqns, sols)
-
-    data["mu320"] = x[0]
-    data["nu320"] = x[1]
-
-    # l = 2 m=1 case.
-    reg22 = y2s["y21"](rp)
-    img22 = y2s["y22"](rp)
-    reg22dot = y2s["y23"](rp)
-    img22dot = y2s["y24"](rp)
-
-    # mu221, mu22m1, nu221, nu22m1, Om1, Om2, Om3, Om4
-    eqns = np.array(
-        [
-            [ img22, -img22, reg22, -reg22, -np.sqrt(24 * np.pi / 5) * 1 / rp**2, 0, 0, 0,],
-            [ -reg22, reg22, img22, -img22, 0, -np.sqrt(24 * np.pi / 5) * 1 / rp**2, 0, 0,],
-            [ reg22, reg22, -img22, -img22, 0, 0, -np.sqrt(24 * np.pi / 5) * 1 / rp**2, 0,],
-            [img22, img22, reg22, reg22,    0, 0, 0, -np.sqrt(24 * np.pi / 5) * 1 / rp**2],
-            [ img22dot, -img22dot, reg22dot, -reg22dot, 2 * np.sqrt(24 * np.pi / 5) * 1 / rp**3, 0, 0, 0,],
-            [ -reg22dot, reg22dot, img22dot, -img22dot, 0, 2 * np.sqrt(24 * np.pi / 5) * 1 / rp**3, 0, 0,],
-            [ reg22dot, reg22dot, -img22dot, -img22dot, 0, 0, 2 * np.sqrt(24 * np.pi / 5) * 1 / rp**3, 0,],
-            [ img22dot, img22dot,  reg22dot,  reg22dot, 0, 0, 0, 2 * np.sqrt(24 * np.pi / 5) * 1 / rp**3,],
-        ]
-    )
-
-    sols = np.array(
-        [
-            0,
-            -np.sqrt(24 * np.pi / 5) * m * np.cos(alpha) * rp**3 / 12 / np.pi / a**4 * 4 * e,
-            0,
-            0,
-            0,
-            -3 * np.sqrt(24 * np.pi / 5) * m * np.cos(alpha) * rp**2 / 12 / np.pi / a**4 * 4 * e,
-            0,
-            0,
-        ]
-    )
-
-    x = np.linalg.solve(eqns, sols)
-
-    data["mu221"] = x[0]
-    data["mu22m1"] = x[1]
-    data["nu221"] = x[2]
-    data["nu22m1"] = x[3]
-
-    # mu122, mu12m2, nu122, nu12m2, b1, b2, b3, b4
-    eqns = np.array(
-        [
-            [-img12, -img12, -reg12, -reg12, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0, 0, 0,],
-            [ reg12,  reg12, -img12, -img12, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0, 0,],
-            [-reg12,  reg12,  img12, -img12, 0, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0,],
-            [-img12,  img12, -reg12,  reg12, 0, 0, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2,],
-            [-img12dot,-img12dot,-reg12dot,-reg12dot, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0, 0, 0,],
-            [ reg12dot, reg12dot,-img12dot,-img12dot, 0, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0, 0,],
-            [-reg12dot, reg12dot, img12dot,-img12dot, 0, 0, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0,],
-            [-img12dot, img12dot,-reg12dot, reg12dot, 0, 0, 0, 4 * 2 ** np.sqrt(6 * np.pi / 5) * 1 / rp**3,],
-        ]
-    )
-    sols = np.array(
-        [
-            -2 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**3 / 8 / np.pi / a**4,
-            0,
-            0,
-            -4 / 3 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**3 / 8 / np.pi / a**4,
-            -3 * 2 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**2 / 8 / np.pi / a**4,
-            0,
-            0,
-            -3 * 4 / 3 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**2 / 8 / np.pi / a**4,
-        ]
-    )
-    x = np.linalg.solve(eqns, sols)
-
-    data["mu122"] = x[0]
-    data["mu12m2"] = x[1]
-    data["nu122"] = x[2]
-    data["nu12m2"] = x[3]
-
-    # cross terms
-
-    # mu322, nu32m2, nu322, nu32m2, d1, d2, d3, d4
-    eqns = np.array(
-        [
-            [-img32,-img32,-reg32,-reg32, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0, 0, 0,],
-            [ reg32, reg32,-img32,-img32, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0, 0,],
-            [-reg32, reg32, img32,-img32, 0, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0,],
-            [-img32, img32,-reg32, reg32, 0, 0, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2,],
-            [-img32dot,-img32dot,-reg32dot,-reg32dot, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0, 0, 0,],
-            [ reg32dot, reg32dot,-img32dot,-img32dot, 0, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0, 0,],
-            [-reg32dot, reg32dot, img32dot,-img32dot, 0, 0, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0,],
-            [-img32dot, img32dot,-reg32dot, reg32dot, 0, 0, 0, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3,],
-        ]
-    )
-
-    sols = np.array(
-        [
-            -4 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**3 * 2 * e / 8 / np.pi / a**4,
-            0,
-            0,
-            -4 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**3 * 4 / 3 * e / 8 / np.pi / a**4,
-            -3 * 4 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**2 * 2 * e / 8 / np.pi / a**4,
-            0,
-            0,
-            -3 * 4 * np.sqrt(6 * np.pi / 5) * m * np.sin(alpha) * rp**2 * 4 / 3 * e / 8 / np.pi / a**4,
-        ]
-    )
-
-    x = np.linalg.solve(eqns, sols)
-
-    data["mu322"] = x[0]
-    data["mu32m2"] = x[1]
-    data["nu322"] = x[2]
-    data["nu32m2"] = x[3]
 
     return data
 
@@ -865,12 +850,12 @@ def find_coeffs_lam(rp, ys, lam, m, a):
 
     return data
 
-def find_as(r, y1s, y2s, y3s, coeffs):
+def find_as(r, y1s, y2s, y3s, y4s, coeffs):
     """
     find the A coefficients as defined in our paper.
     inputs:
     rp = radius of planet (m)
-    y1s, y2s, y3s = outputs of find_ys for the i=1, i=2, and i=3 cases as defined in 
+    y1s, y2s, y3s, y4s = outputs of find_ys for the i=1, i=2, i=3, and i=4 cases as defined in 
     section 3.4.2 of the paper.
     coeffs = output of find_coeffs for this model.
     
@@ -881,13 +866,71 @@ def find_as(r, y1s, y2s, y3s, coeffs):
     img21 = y2s["y12"](r)
     reg31 = y3s["y11"](r)
     img31 = y3s["y12"](r)
+    reg41 = y4s["y11"](r)
+    img41 = y4s["y12"](r)
 
-    reg12 = y1s["y21"](r)
-    img12 = y1s["y22"](r)
-    reg22 = y2s["y21"](r)
-    img22 = y2s["y22"](r)
-    reg32 = y3s["y21"](r)
-    img32 = y3s["y22"](r)
+
+    a_vals = {}
+
+    a_vals["a11"] = (-coeffs["nu111"] + coeffs["nu11m1"]) * reg11 + (
+        -coeffs["mu111"] + coeffs["mu11m1"]
+    ) * img11
+    a_vals["a12"] = (-coeffs["mu111"] - coeffs["mu11m1"]) * reg11 + (
+        coeffs["nu111"] + coeffs["nu11m1"]
+    ) * img11
+    a_vals["a13"] = (-coeffs["mu111"] + coeffs["mu11m1"]) * reg11 + (
+        coeffs["nu111"] - coeffs["nu11m1"]
+    ) * img11
+    a_vals["a14"] = (coeffs["nu111"] + coeffs["nu11m1"]) * reg11 + (
+        coeffs["mu111"] + coeffs["mu11m1"]
+    ) * img11
+
+    a_vals["a21"] = coeffs["nu210"] * reg21 + coeffs["mu210"] * img21
+    a_vals["a22"] = coeffs["mu210"] * reg21 - coeffs["nu210"] * img21
+
+    a_vals["a31"] = (-coeffs["nu311"] + coeffs["nu31m1"]) * reg11 + (
+        -coeffs["mu311"] + coeffs["mu31m1"]
+    ) * img11
+    a_vals["a32"] = (-coeffs["mu311"] - coeffs["mu31m1"]) * reg11 + (
+        coeffs["nu311"] + coeffs["nu31m1"]
+    ) * img11
+    a_vals["a33"] = (-coeffs["mu311"] + coeffs["mu31m1"]) * reg11 + (
+        coeffs["nu311"] - coeffs["nu31m1"]
+    ) * img11
+    a_vals["a34"] = (coeffs["nu311"] + coeffs["nu31m1"]) * reg11 + (
+        coeffs["mu311"] + coeffs["mu31m1"]
+    ) * img11
+
+    a_vals["a41"] = (-coeffs["nu411"] + coeffs["nu41m1"]) * reg11 + (
+        -coeffs["mu411"] + coeffs["mu41m1"]
+    ) * img11
+    a_vals["a42"] = (-coeffs["mu411"] - coeffs["mu41m1"]) * reg11 + (
+        coeffs["nu411"] + coeffs["nu41m1"]
+    ) * img11
+    a_vals["a43"] = (-coeffs["mu411"] + coeffs["mu41m1"]) * reg11 + (
+        coeffs["nu411"] - coeffs["nu41m1"]
+    ) * img11
+    a_vals["a44"] = (coeffs["nu411"] + coeffs["nu41m1"]) * reg11 + (
+        coeffs["mu411"] + coeffs["mu41m1"]
+    ) * img11
+    
+
+    return a_vals
+    
+def find_as_zeroecc(r, ys, coeffs):
+    """
+    find the A coefficients as defined in our paper, in the specific case that eccentricity = 0.
+    inputs:
+    rp = radius of planet (m)
+    ys = outputs of find_ys
+    coeffs = output of find_coeffs for this model.
+    
+    """
+    reg11 = ys["y11"](r)
+    img11 = ys["y12"](r)
+
+    reg12 = ys["y21"](r)
+    img12 = ys["y22"](r)
 
     a_vals = {}
 
@@ -920,120 +963,54 @@ def find_as(r, y1s, y2s, y3s, coeffs):
         -coeffs["mu122"] + coeffs["mu12m2"]
     )
 
-    a_vals["a21"] = coeffs["nu210"] * reg21 + coeffs["mu210"] * img21
-    a_vals["a22"] = coeffs["mu210"] * reg21 - coeffs["nu210"] * img21
-    
-    a_vals["a23"] = reg22 * (-coeffs["nu221"] + coeffs["nu22m1"]) + img22 * (
-        -coeffs["mu221"] + coeffs["mu22m1"]
-    )
-    a_vals["a24"] = reg22 * (-coeffs["mu221"] - coeffs["mu22m1"]) + img22 * (
-        coeffs["nu221"] + coeffs["nu22m1"]
-    )
-    a_vals["a25"] = reg22 * (-coeffs["mu221"] + coeffs["mu22m1"]) + img22 * (
-        coeffs["nu221"] - coeffs["nu22m1"]
-    )
-    a_vals["a26"] = reg22 * (coeffs["nu221"] + coeffs["nu22m1"]) + img22 * (
-        coeffs["mu221"] + coeffs["mu22m1"]
-    )
-
-    a_vals["a31"] = (-coeffs["nu311"] + coeffs["nu31m1"]) * reg31 + (
-        -coeffs["mu311"] + coeffs["mu31m1"]
-    ) * img31
-    a_vals["a32"] = (-coeffs["mu311"] - coeffs["mu31m1"]) * reg31 + (
-        coeffs["nu311"] + coeffs["nu31m1"]
-    ) * img31
-    a_vals["a33"] = (-coeffs["mu311"] + coeffs["mu31m1"]) * reg31 + (
-        coeffs["nu311"] - coeffs["nu31m1"]
-    ) * img31
-    a_vals["a34"] = (coeffs["nu311"] + coeffs["nu31m1"]) * reg31 + (
-        coeffs["mu311"] + coeffs["mu31m1"]
-    ) * img31
-
-    a_vals["a35"] = reg32 * coeffs["nu320"] + img32 * coeffs["mu320"]
-    a_vals["a36"] = reg32 * coeffs["mu320"] - img32 * coeffs["nu320"]
-    
-    a_vals["a37"] = reg32 * (coeffs["nu322"] + coeffs["nu32m2"]) + img32 * (
-        coeffs["mu322"] + coeffs["mu32m2"]
-    )
-    a_vals["a38"] = reg32 * (-coeffs["nu322"] + coeffs["nu32m2"]) + img32 * (
-        -coeffs["mu322"] + coeffs["mu32m2"]
-    )
-    a_vals["a39"] = reg32 * (coeffs["mu322"] - coeffs["mu32m2"]) + img32 * (
-        -coeffs["nu322"] + coeffs["nu32m2"]
-    )
-    a_vals["a310"] = reg32 * (coeffs["mu322"] + coeffs["mu32m2"]) + img32 * (
-        -coeffs["nu322"] - coeffs["nu32m2"]
-    )
-
     return a_vals
     
-def find_as_zeroecc(r, ys, coeffs):
+
+def pvol_zeroecc(t, w, r, rp, a_vals, eta_func, eta_mult=1, temp_mult=1, l=1):
     """
-    find the A coefficients as defined in our paper, in the specific case that eccentricity = 0.
-    inputs:
+    Estimates the power-per-volume deposited by magnetic induction, given the A coefficients 
+    from find_as_zeroecc().  Only works in the ecc=0 case.
+    
+    t = times to evaluate model at, in seconds.
+    w = frequency difference (2 pi / prot - 2 pi / porb), in s^-1
+    r = radius to evaluate model at (m)
     rp = radius of planet (m)
-    ys = outputs of find_ys
-    coeffs = output of find_coeffs for this model.
-    
+    a_vals = outputs of find_as_zeroecc()
+    eta_func = Function that describes eta as a function of r, rp
+        form:  eta_func(r, rp, eta_mult, temp_mult)
+    eta_mult = multiplicative factor on eta
+    temp_mult = multiplicative factor on temperature
+    l = spherical harmonic terms to consider,valid values are l=1 or l=2
     """
-    reg11 = ys["y11"](r)
-    img11 = ys["y12"](r)
-
-    reg12 = ys["y21"](r)
-    img12 = ys["y22"](r)
-
-    a_vals = {}
-
-    a_vals["a11"] = (-coeffs["nu11"] + coeffs["nu1m1"]) * reg11 + (
-        -coeffs["mu11"] + coeffs["mu1m1"]
-    ) * img11
-    a_vals["a12"] = (-coeffs["mu11"] - coeffs["mu1m1"]) * reg11 + (
-        coeffs["nu11"] + coeffs["nu1m1"]
-    ) * img11
-    a_vals["a13"] = (-coeffs["mu11"] + coeffs["mu1m1"]) * reg11 + (
-        coeffs["nu11"] - coeffs["nu1m1"]
-    ) * img11
-    a_vals["a14"] = (coeffs["nu11"] + coeffs["nu1m1"]) * reg11 + (
-        coeffs["mu11"] + coeffs["mu1m1"]
-    ) * img11
-
-    a_vals["a15"] = reg12 * coeffs["nu20"] + img12 * coeffs["mu20"]
-    a_vals["a16"] = reg12 * coeffs["mu20"] - img12 * coeffs["nu20"]
-
-    a_vals["a17"] = reg12 * (coeffs["nu22"] + coeffs["nu2m2"]) + img12 * (
-        coeffs["mu22"] + coeffs["mu2m2"]
-    )
-    a_vals["a18"] = reg12 * (coeffs["mu22"] - coeffs["mu2m2"]) + img12 * (
-        -coeffs["nu22"] + coeffs["nu2m2"]
-    )
-    a_vals["a19"] = reg12 * (coeffs["mu22"] + coeffs["mu2m2"]) + img12 * (
-        -coeffs["nu22"] - coeffs["nu2m2"]
-    )
-    a_vals["a110"] = reg12 * (-coeffs["nu22"] + coeffs["nu2m2"]) + img12 * (
-        -coeffs["mu22"] + coeffs["mu2m2"]
-    )
     
-    # Set all of the cross terms equal to zero, as they are in the e=0 scenario.
+    A11=a_vals["a11"]
+    A12=a_vals["a12"]
+    A13=a_vals["a13"]
+    A14=a_vals["a14"]
 
-    a_vals["a21"] = 0
-    a_vals["a22"] = 0
-    a_vals["a23"] = 0
-    a_vals["a24"] = 0
-    a_vals["a25"] = 0
-    a_vals["a26"] = 0
-    a_vals["a31"] = 0
-    a_vals["a32"] = 0
-    a_vals["a33"] = 0
-    a_vals["a34"] = 0
-    a_vals["a35"] = 0
-    a_vals["a36"] = 0
-    a_vals["a37"] = 0
-    a_vals["a38"] = 0
-    a_vals["a39"] = 0
-    a_vals["a310"] = 0
-    return a_vals
-    
-    
+    if l==2:
+        A15=a_vals["a15"]
+        A16=a_vals["a16"]
+        A17=a_vals["a17"]
+        A18=a_vals["a18"]
+        A19=a_vals["a19"]
+        A110=a_vals["a110"]
+    elif l==1: # A terms from l>1 harmonics are not considered (set to zero)
+        A15=0
+        A16=0
+        A17=0
+        A18=0
+        A19=0
+        A110=0
+    else: # l is not a valid value.
+        print("Invalid value for max spherical harmonic, l must be 1 or 2")  
+
+
+    return w**2/eta_func(r, rp, eta_mult=eta_mult, temp_mult=temp_mult) * MU0/r**2 \
+    * (np.cos(w*t)**2*(A11**2+A12**2+3*(A17**2+A18**2) + 6*A15**2) 
+    +np.sin(w*t)**2*(A13**2+A14**2+3*(A19**2+A110**2) + 6*A16**2) 
+    +2*np.cos(w*t)*np.sin(w*t) * (A11*A13+A12*A14+3*(A17*A19+A18*A110)+6*A15*A16)
+    )
     
 def pvol(t, w, wp, r, rp, a_vals, eta_func, eta_mult=1, temp_mult=1):
     """
@@ -1056,91 +1033,63 @@ def pvol(t, w, wp, r, rp, a_vals, eta_func, eta_mult=1, temp_mult=1):
     A12=a_vals["a12"]
     A13=a_vals["a13"]
     A14=a_vals["a14"]
-    A15=a_vals["a15"]
-    A16=a_vals["a16"]
-    A17=a_vals["a17"]
-    A18=a_vals["a18"]
-    A19=a_vals["a19"]
-    A110=a_vals["a110"]
     A21=a_vals["a21"]
     A22=a_vals["a22"]
-    A23=a_vals["a23"]
-    A24=a_vals["a24"]
-    A25=a_vals["a25"]
-    A26=a_vals["a26"]
     A31=a_vals["a31"]
     A32=a_vals["a32"]
     A33=a_vals["a33"]
     A34=a_vals["a34"]
-    A35=a_vals["a35"]
-    A36=a_vals["a36"]
-    A37=a_vals["a37"]
-    A38=a_vals["a38"]
-    A39=a_vals["a39"]
-    A310=a_vals["a310"]
+    A41=a_vals["a41"]
+    A42=a_vals["a42"]
+    A43=a_vals["a43"]
+    A44=a_vals["a44"]
  
-    return (1/(64*eta_func(r, rp, eta_mult=eta_mult, temp_mult=temp_mult)))/r**2*MU0*(32*A11**2*w**2+96*A110**2*w**2+32*A12**2*w**2+32*A13**2*w**2+32*A14**2*w**2
-    +192*A15**2*w**2+192*A16**2*w**2+96*A17**2*w**2+96*A18**2*w**2+96*A19**2*w**2
-    +32*A31**2*w**2+36*A310**2*w**2+32*A32**2*w**2+32*A33**2*w**2+32*A34**2*w**2
-    +192*A35**2*w**2+192*A36**2*w**2+36*A37**2*w**2+36*A38**2*w**2+36*A39**2*w**2
-    +9*np.sqrt(5)*A310*A33*np.pi*w**2+9*np.sqrt(5)*A31*A37*np.pi*w**2+9*np.sqrt(5)*A34*A38*np.pi*w**2
-    +9*np.sqrt(5)*A32*A39*np.pi*w**2+64*A31**2*w*wp+72*A310**2*w*wp+64*A32**2*w*wp
-    +64*A33**2*w*wp+64*A34**2*w*wp+384*A35**2*w*wp+384*A36**2*w*wp+72*A37**2*w*wp
-    +72*A38**2*w*wp+72*A39**2*w*wp+18*np.sqrt(5)*A310*A33*np.pi*w*wp+18*np.sqrt(5)*A31*A37*np.pi*w*wp
-    +18*np.sqrt(5)*A34*A38*np.pi*w*wp+18*np.sqrt(5)*A32*A39*np.pi*w*wp+64*A21**2*wp**2+64*A22**2*wp**2
-    +96*A23**2*wp**2+96*A24**2*wp**2+96*A25**2*wp**2+96*A26**2*wp**2+32*A31**2*wp**2+36*A310**2*wp**2
-    +32*A32**2*wp**2+32*A33**2*wp**2+32*A34**2*wp**2+192*A35**2*wp**2+192*A36**2*wp**2+36*A37**2*wp**2
-    +36*A38**2*wp**2+36*A39**2*wp**2+9*np.sqrt(5)*A310*A33*np.pi*wp**2+9*np.sqrt(5)*A31*A37*np.pi*wp**2
-    +9*np.sqrt(5)*A34*A38*np.pi*wp**2+9*np.sqrt(5)*A32*A39*np.pi*wp**2
-    +32*(A11**2-3*A110**2+A12**2-A13**2-A14**2+6*A15**2-6*A16**2+3*A17**2+3*A18**2-3*A19**2)*w**2*np.cos(2*t*w)
-    +(64*A11*A31+64*A12*A32+64*A13*A33+64*A14*A34+384*A15*A35+384*A16*A36+9*np.sqrt(5)*A13*A310*np.pi
-    +9*np.sqrt(5)*A11*A37*np.pi+9*np.sqrt(5)*A14*A38*np.pi+9*np.sqrt(5)*A12*A39*np.pi)*w*(w+wp)*np.cos(t*wp)
-    +64*A21**2*wp**2*np.cos(2*t*wp)-64*A22**2*wp**2*np.cos(2*t*wp)+96*A23**2*wp**2*np.cos(2*t*wp)
-    +96*A24**2*wp**2*np.cos(2*t*wp)-96*A25**2*wp**2*np.cos(2*t*wp)-96*A26**2*wp**2*np.cos(2*t*wp)
-    +32*A31**2*w**2*np.cos(2*t*(w+wp))-36*A310**2*w**2*np.cos(2*t*(w+wp))+32*A32**2*w**2*np.cos(2*t*(w+wp))
-    -32*A33**2*w**2*np.cos(2*t*(w+wp))-32*A34**2*w**2*np.cos(2*t*(w+wp))+192*A35**2*w**2*np.cos(2*t*(w+wp))
-    -192*A36**2*w**2*np.cos(2*t*(w+wp))+36*A37**2*w**2*np.cos(2*t*(w+wp))-36*A38**2*w**2*np.cos(2*t*(w+wp))
-    +36*A39**2*w**2*np.cos(2*t*(w+wp))-9*np.sqrt(5)*A310*A33*np.pi*w**2*np.cos(2*t*(w+wp))
-    +9*np.sqrt(5)*A31*A37*np.pi*w**2*np.cos(2*t*(w+wp))-9*np.sqrt(5)*A34*A38*np.pi*w**2*np.cos(2*t*(w+wp))+9*np.sqrt(5)*A32*A39*np.pi*w**2*np.cos(2*t*(w+wp))
-    +64*A31**2*w*wp*np.cos(2*t*(w+wp))-72*A310**2*w*wp*np.cos(2*t*(w+wp))+64*A32**2*w*wp*np.cos(2*t*(w+wp))-64*A33**2*w*wp*np.cos(2*t*(w+wp))-64*A34**2*w*wp*np.cos(2*t*(w+wp))
-    +384*A35**2*w*wp*np.cos(2*t*(w+wp))-384*A36**2*w*wp*np.cos(2*t*(w+wp))+72*A37**2*w*wp*np.cos(2*t*(w+wp))-72*A38**2*w*wp*np.cos(2*t*(w+wp))
-    +72*A39**2*w*wp*np.cos(2*t*(w+wp))-18*np.sqrt(5)*A310*A33*np.pi*w*wp*np.cos(2*t*(w+wp))
-    +18*np.sqrt(5)*A31*A37*np.pi*w*wp*np.cos(2*t*(w+wp))-18*np.sqrt(5)*A34*A38*np.pi*w*wp*np.cos(2*t*(w+wp))
-    +18*np.sqrt(5)*A32*A39*np.pi*w*wp*np.cos(2*t*(w+wp))
-    +32*A31**2*wp**2*np.cos(2*t*(w+wp))-36*A310**2*wp**2*np.cos(2*t*(w+wp))
-    +32*A32**2*wp**2*np.cos(2*t*(w+wp))-32*A33**2*wp**2*np.cos(2*t*(w+wp))-32*A34**2*wp**2*np.cos(2*t*(w+wp))
-    +192*A35**2*wp**2*np.cos(2*t*(w+wp))-192*A36**2*wp**2*np.cos(2*t*(w+wp))+36*A37**2*wp**2*np.cos(2*t*(w+wp))-36*A38**2*wp**2*np.cos(2*t*(w+wp))
-    +36*A39**2*wp**2*np.cos(2*t*(w+wp))-9*np.sqrt(5)*A310*A33*np.pi*wp**2*np.cos(2*t*(w+wp))
-    +9*np.sqrt(5)*A31*A37*np.pi*wp**2*np.cos(2*t*(w+wp))-9*np.sqrt(5)*A34*A38*np.pi*wp**2*np.cos(2*t*(w+wp))+9*np.sqrt(5)*A32*A39*np.pi*wp**2*np.cos(2*t*(w+wp))
-    +64*A11*A31*w**2*np.cos(t*(2*w+wp))+64*A12*A32*w**2*np.cos(t*(2*w+wp))-64*A13*A33*w**2*np.cos(t*(2*w+wp))-64*A14*A34*w**2*np.cos(t*(2*w+wp))
-    +384*A15*A35*w**2*np.cos(t*(2*w+wp))-384*A16*A36*w**2*np.cos(t*(2*w+wp))-9*np.sqrt(5)*A13*A310*np.pi*w**2*np.cos(t*(2*w+wp))
-    +9*np.sqrt(5)*A11*A37*np.pi*w**2*np.cos(t*(2*w+wp))-9*np.sqrt(5)*A14*A38*np.pi*w**2*np.cos(t*(2*w+wp))+9*np.sqrt(5)*A12*A39*np.pi*w**2*np.cos(t*(2*w+wp))
-    +64*A11*A31*w*wp*np.cos(t*(2*w+wp))+64*A12*A32*w*wp*np.cos(t*(2*w+wp))-64*A13*A33*w*wp*np.cos(t*(2*w+wp))-64*A14*A34*w*wp*np.cos(t*(2*w+wp))
-    +384*A15*A35*w*wp*np.cos(t*(2*w+wp))-384*A16*A36*w*wp*np.cos(t*(2*w+wp))-9*np.sqrt(5)*A13*A310*np.pi*w*wp*np.cos(t*(2*w+wp))
-    +9*np.sqrt(5)*A11*A37*np.pi*w*wp*np.cos(t*(2*w+wp))-9*np.sqrt(5)*A14*A38*np.pi*w*wp*np.cos(t*(2*w+wp))+9*np.sqrt(5)*A12*A39*np.pi*w*wp*np.cos(t*(2*w+wp))
-    +64*A11*A13*w**2*np.sin(2*t*w)+64*A12*A14*w**2*np.sin(2*t*w)+384*A15*A16*w**2*np.sin(2*t*w)+192*A110*A18*w**2*np.sin(2*t*w)
-    +192*A17*A19*w**2*np.sin(2*t*w)-64*A13*A31*w**2*np.sin(t*wp)-64*A14*A32*w**2*np.sin(t*wp)+64*A11*A33*w**2*np.sin(t*wp)
-    +64*A12*A34*w**2*np.sin(t*wp)-384*A16*A35*w**2*np.sin(t*wp)
-    +384*A15*A36*w**2*np.sin(t*wp)+9*np.sqrt(5)*A11*A310*np.pi*w**2*np.sin(t*wp)-9*np.sqrt(5)*A13*A37*np.pi*w**2*np.sin(t*wp)
-    +9*np.sqrt(5)*A12*A38*np.pi*w**2*np.sin(t*wp)-9*np.sqrt(5)*A14*A39*np.pi*w**2*np.sin(t*wp)-64*A13*A31*w*wp*np.sin(t*wp)-64*A14*A32*w*wp*np.sin(t*wp)
-    +64*A11*A33*w*wp*np.sin(t*wp)
-    +64*A12*A34*w*wp*np.sin(t*wp)-384*A16*A35*w*wp*np.sin(t*wp)+384*A15*A36*w*wp*np.sin(t*wp)
-    +9*np.sqrt(5)*A11*A310*np.pi*w*wp*np.sin(t*wp)-9*np.sqrt(5)*A13*A37*np.pi*w*wp*np.sin(t*wp)
-    +9*np.sqrt(5)*A12*A38*np.pi*w*wp*np.sin(t*wp)-9*np.sqrt(5)*A14*A39*np.pi*w*wp*np.sin(t*wp)+128*A21*A22*wp**2*np.sin(2*t*wp)+192*A23*A25*wp**2*np.sin(2*t*wp)
-    +192*A24*A26*wp**2*np.sin(2*t*wp)+64*A31*A33*w**2*np.sin(2*t*(w+wp))+64*A32*A34*w**2*np.sin(2*t*(w+wp))+384*A35*A36*w**2*np.sin(2*t*(w+wp))+72*A310*A37*w**2*np.sin(2*t*(w+wp))
-    +72*A38*A39*w**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A31*A310*np.pi*w**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A33*A37*np.pi*w**2*np.sin(2*t*(w+wp))
-    +9*np.sqrt(5)*A32*A38*np.pi*w**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A34*A39*np.pi*w**2*np.sin(2*t*(w+wp))+128*A31*A33*w*wp*np.sin(2*t*(w+wp))+128*A32*A34*w*wp*np.sin(2*t*(w+wp))
-    +768*A35*A36*w*wp*np.sin(2*t*(w+wp))+144*A310*A37*w*wp*np.sin(2*t*(w+wp))+144*A38*A39*w*wp*np.sin(2*t*(w+wp))+18*np.sqrt(5)*A31*A310*np.pi*w*wp*np.sin(2*t*(w+wp))
-    +18*np.sqrt(5)*A33*A37*np.pi*w*wp*np.sin(2*t*(w+wp))+18*np.sqrt(5)*A32*A38*np.pi*w*wp*np.sin(2*t*(w+wp))+18*np.sqrt(5)*A34*A39*np.pi*w*wp*np.sin(2*t*(w+wp))
-    +64*A31*A33*wp**2*np.sin(2*t*(w+wp))+64*A32*A34*wp**2*np.sin(2*t*(w+wp))+384*A35*A36*wp**2*np.sin(2*t*(w+wp))+72*A310*A37*wp**2*np.sin(2*t*(w+wp))
-    +72*A38*A39*wp**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A31*A310*np.pi*wp**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A33*A37*np.pi*wp**2*np.sin(2*t*(w+wp))
-    +9*np.sqrt(5)*A32*A38*np.pi*wp**2*np.sin(2*t*(w+wp))+9*np.sqrt(5)*A34*A39*np.pi*wp**2*np.sin(2*t*(w+wp))+64*A13*A31*w**2*np.sin(t*(2*w+wp))+64*A14*A32*w**2*np.sin(t*(2*w+wp))
-    +64*A11*A33*w**2*np.sin(t*(2*w+wp))+64*A12*A34*w**2*np.sin(t*(2*w+wp))+384*A16*A35*w**2*np.sin(t*(2*w+wp))+384*A15*A36*w**2*np.sin(t*(2*w+wp))
-    +9*np.sqrt(5)*A11*A310*np.pi*w**2*np.sin(t*(2*w+wp))+9*np.sqrt(5)*A13*A37*np.pi*w**2*np.sin(t*(2*w+wp))+9*np.sqrt(5)*A12*A38*np.pi*w**2*np.sin(t*(2*w+wp))
-    +9*np.sqrt(5)*A14*A39*np.pi*w**2*np.sin(t*(2*w+wp))+64*A13*A31*w*wp*np.sin(t*(2*w+wp))+64*A14*A32*w*wp*np.sin(t*(2*w+wp))+64*A11*A33*w*wp*np.sin(t*(2*w+wp))
-    +64*A12*A34*w*wp*np.sin(t*(2*w+wp))+384*A16*A35*w*wp*np.sin(t*(2*w+wp))+384*A15*A36*w*wp*np.sin(t*(2*w+wp))+9*np.sqrt(5)*A11*A310*np.pi*w*wp*np.sin(t*(2*w+wp))
-    +9*np.sqrt(5)*A13*A37*np.pi*w*wp*np.sin(t*(2*w+wp))+9*np.sqrt(5)*A12*A38*np.pi*w*wp*np.sin(t*(2*w+wp))+9*np.sqrt(5)*A14*A39*np.pi*w*wp*np.sin(t*(2*w+wp)))
-
+    return (1/(2*eta_func(r, rp, eta_mult=eta_mult, temp_mult=temp_mult)))/r**2*MU0*(A11**2*w**2
+    +A12**2*w**2+A13**2*w**2+A14**2*w**2+A31**2*w**2+A32**2*w**2+A33**2*w**2+A34**2*w**2
+    +A41**2*w**2+A42**2*w**2+A43**2*w**2+A44**2*w**2+2*A31**2*w*wp+2*A32**2*w*wp+2*A33**2*w*wp
+    +2*A34**2*w*wp-2*A41**2*w*wp-2*A42**2*w*wp-2*A43**2*w*wp-2*A44**2*w*wp+2*A21**2*wp**2
+    +2*A22**2*wp**2+A31**2*wp**2+A32**2*wp**2+A33**2*wp**2+A34**2*wp**2+A41**2*wp**2+A42**2*wp**2
+    +A43**2*wp**2+A44**2*wp**2+(A11**2*w**2+A12**2*w**2-A13**2*w**2-A14**2*w**2+2*A31*A41*w**2
+    +2*A32*A42*w**2-2*A33*A43*w**2-2*A34*A44*w**2-2*A31*A41*wp**2-2*A32*A42*wp**2+2*A33*A43*wp**2
+    +2*A34*A44*wp**2)*np.cos(2*t*w)+(A41**2+A42**2-A43**2-A44**2)*(w-wp)**2*np.cos(2*t*(w-wp))
+    +2*A11*A41*w**2*np.cos(t*(2*w-wp))+2*A12*A42*w**2*np.cos(t*(2*w-wp))-2*A13*A43*w**2*np.cos(t*(2*w-wp))
+    -2*A14*A44*w**2*np.cos(t*(2*w-wp))-2*A11*A41*w*wp*np.cos(t*(2*w-wp))-2*A12*A42*w*wp*np.cos(t*(2*w-wp))
+    +2*A13*A43*w*wp*np.cos(t*(2*w-wp))+2*A14*A44*w*wp*np.cos(t*(2*w-wp))+2*A11*A31*w**2*np.cos(t*wp)
+    +2*A12*A32*w**2*np.cos(t*wp)+2*A13*A33*w**2*np.cos(t*wp)+2*A14*A34*w**2*np.cos(t*wp)
+    +2*A11*A41*w**2*np.cos(t*wp)+2*A12*A42*w**2*np.cos(t*wp)+2*A13*A43*w**2*np.cos(t*wp)
+    +2*A14*A44*w**2*np.cos(t*wp)+2*A11*A31*w*wp*np.cos(t*wp)+2*A12*A32*w*wp*np.cos(t*wp)
+    +2*A13*A33*w*wp*np.cos(t*wp)+2*A14*A34*w*wp*np.cos(t*wp)-2*A11*A41*w*wp*np.cos(t*wp)
+    -2*A12*A42*w*wp*np.cos(t*wp)-2*A13*A43*w*wp*np.cos(t*wp)-2*A14*A44*w*wp*np.cos(t*wp)
+    +2*A31*A41*w**2*np.cos(2*t*wp)+2*A32*A42*w**2*np.cos(2*t*wp)+2*A33*A43*w**2*np.cos(2*t*wp)
+    +2*A34*A44*w**2*np.cos(2*t*wp)+2*A21**2*wp**2*np.cos(2*t*wp)-2*A22**2*wp**2*np.cos(2*t*wp)
+    -2*A31*A41*wp**2*np.cos(2*t*wp)-2*A32*A42*wp**2*np.cos(2*t*wp)-2*A33*A43*wp**2*np.cos(2*t*wp)
+    -2*A34*A44*wp**2*np.cos(2*t*wp)+A31**2*w**2*np.cos(2*t*(w+wp))+A32**2*w**2*np.cos(2*t*(w+wp))
+    -A33**2*w**2*np.cos(2*t*(w+wp))-A34**2*w**2*np.cos(2*t*(w+wp))+2*A31**2*w*wp*np.cos(2*t*(w+wp))
+    +2*A32**2*w*wp*np.cos(2*t*(w+wp))-2*A33**2*w*wp*np.cos(2*t*(w+wp))-2*A34**2*w*wp*np.cos(2*t*(w+wp))
+    +A31**2*wp**2*np.cos(2*t*(w+wp))+A32**2*wp**2*np.cos(2*t*(w+wp))-A33**2*wp**2*np.cos(2*t*(w+wp))
+    -A34**2*wp**2*np.cos(2*t*(w+wp))+2*A11*A31*w**2*np.cos(t*(2*w+wp))+2*A12*A32*w**2*np.cos(t*(2*w+wp))
+    -2*A13*A33*w**2*np.cos(t*(2*w+wp))-2*A14*A34*w**2*np.cos(t*(2*w+wp))+2*A11*A31*w*wp*np.cos(t*(2*w+wp))
+    +2*A12*A32*w*wp*np.cos(t*(2*w+wp))-2*A13*A33*w*wp*np.cos(t*(2*w+wp))-2*A14*A34*w*wp*np.cos(t*(2*w+wp))
+    +2*A11*A13*w**2*np.sin(2*t*w)+2*A12*A14*w**2*np.sin(2*t*w)+2*A33*A41*w**2*np.sin(2*t*w)
+    +2*A34*A42*w**2*np.sin(2*t*w)+2*A31*A43*w**2*np.sin(2*t*w)+2*A32*A44*w**2*np.sin(2*t*w)
+    -2*A33*A41*wp**2*np.sin(2*t*w)-2*A34*A42*wp**2*np.sin(2*t*w)-2*A31*A43*wp**2*np.sin(2*t*w)
+    -2*A32*A44*wp**2*np.sin(2*t*w)+2*A41*A43*w**2*np.sin(2*t*(w-wp))+2*A42*A44*w**2*np.sin(2*t*(w-wp))
+    -4*A41*A43*w*wp*np.sin(2*t*(w-wp))-4*A42*A44*w*wp*np.sin(2*t*(w-wp))+2*A41*A43*wp**2*np.sin(2*t*(w-wp))
+    +2*A42*A44*wp**2*np.sin(2*t*(w-wp))+2*A13*A41*w**2*np.sin(t*(2*w-wp))+2*A14*A42*w**2*np.sin(t*(2*w-wp))
+    +2*A11*A43*w**2*np.sin(t*(2*w-wp))+2*A12*A44*w**2*np.sin(t*(2*w-wp))-2*A13*A41*w*wp*np.sin(t*(2*w-wp))
+    -2*A14*A42*w*wp*np.sin(t*(2*w-wp))-2*A11*A43*w*wp*np.sin(t*(2*w-wp))-2*A12*A44*w*wp*np.sin(t*(2*w-wp))
+    -2*A13*A31*w**2*np.sin(t*wp)-2*A14*A32*w**2*np.sin(t*wp)+2*A11*A33*w**2*np.sin(t*wp)+2*A12*A34*w**2*np.sin(t*wp)
+    +2*A13*A41*w**2*np.sin(t*wp)+2*A14*A42*w**2*np.sin(t*wp)-2*A11*A43*w**2*np.sin(t*wp)-2*A12*A44*w**2*np.sin(t*wp)
+    -2*A13*A31*w*wp*np.sin(t*wp)-2*A14*A32*w*wp*np.sin(t*wp)+2*A11*A33*w*wp*np.sin(t*wp)+2*A12*A34*w*wp*np.sin(t*wp)
+    -2*A13*A41*w*wp*np.sin(t*wp)-2*A14*A42*w*wp*np.sin(t*wp)+2*A11*A43*w*wp*np.sin(t*wp)+2*A12*A44*w*wp*np.sin(t*wp)
+    +2*A33*A41*w**2*np.sin(2*t*wp)+2*A34*A42*w**2*np.sin(2*t*wp)-2*A31*A43*w**2*np.sin(2*t*wp)
+    -2*A32*A44*w**2*np.sin(2*t*wp)+4*A21*A22*wp**2*np.sin(2*t*wp)-2*A33*A41*wp**2*np.sin(2*t*wp)
+    -2*A34*A42*wp**2*np.sin(2*t*wp)+2*A31*A43*wp**2*np.sin(2*t*wp)+2*A32*A44*wp**2*np.sin(2*t*wp)
+    +2*A31*A33*w**2*np.sin(2*t*(w+wp))+2*A32*A34*w**2*np.sin(2*t*(w+wp))+4*A31*A33*w*wp*np.sin(2*t*(w+wp))
+    +4*A32*A34*w*wp*np.sin(2*t*(w+wp))+2*A31*A33*wp**2*np.sin(2*t*(w+wp))+2*A32*A34*wp**2*np.sin(2*t*(w+wp))
+    +2*A13*A31*w**2*np.sin(t*(2*w+wp))+2*A14*A32*w**2*np.sin(t*(2*w+wp))+2*A11*A33*w**2*np.sin(t*(2*w+wp))
+    +2*A12*A34*w**2*np.sin(t*(2*w+wp))+2*A13*A31*w*wp*np.sin(t*(2*w+wp))+2*A14*A32*w*wp*np.sin(t*(2*w+wp))
+    +2*A11*A33*w*wp*np.sin(t*(2*w+wp))+2*A12*A34*w*wp*np.sin(t*(2*w+wp)))
 
     
 def generate_profile(mpl=1,teq=600, cmf=0.01, log_feh=0, co=0.55, tint=100, fixed_radius=None):
@@ -1225,6 +1174,7 @@ def find_power(
     log_feh=0,
     co=0.55,
     tint=100,
+    l=1,
     pregen_tprofile=None,
     pregen_pprofile=None,
     pregen_r = None,
@@ -1258,6 +1208,9 @@ def find_power(
     log_feh = log metallicity of planet.
     co = C/O ratio of planet
     tint = internal temperature of planet (K)   
+
+    l = spherical harmonics to consider.  For nonzero eccentricity, only l=1 is allowed.  For zero eccentricity, 
+    l=2 or l=1 are both valid.
     """
     
 
@@ -1310,13 +1263,17 @@ def find_power(
     teqs = np.zeros(len(ts))  # equlibrium temperature as a function of time.
     r_profile = np.linspace(r0, rp, nr)
 
-
     y1 = find_ys(w, rp, eta_use, r0=r0, eta_mult=eta_mult, temp_mult=temp_mult)
-    y2 = find_ys(wp, rp, eta_use, r0=r0, eta_mult=eta_mult, temp_mult=temp_mult)
-    y3 = find_ys(w + wp, rp, eta_use, r0=r0, eta_mult=eta_mult, temp_mult=temp_mult)
-    coeffs = find_coeffs(rp, y1, y2, y3, alpha, m, d, ecc)
-    a_vals = find_as(r_profile, y1, y2, y3, coeffs) 
+    if ecc>0:
+        y2 = find_ys(wp, rp, eta_use, r0=r0, eta_mult=eta_mult, temp_mult=temp_mult)
+        y3 = find_ys(w + wp, rp, eta_use, r0=r0, eta_mult=eta_mult, temp_mult=temp_mult)
+        y4 = find_ys(w - wp, rp, eta_use, r0=r0, eta_mult=eta_mult, temp_mult=temp_mult)
 
+        coeffs = find_coeffs(rp, y1, y2, y3, y4, alpha, m, d, ecc)
+        a_vals = find_as(r_profile, y1, y2, y3, y4, coeffs) 
+    elif ecc==0:
+        coeffs = find_coeffs_zeroecc(rp, y1, alpha, m, d)
+        a_vals = find_as_zeroecc(r_profile, y1, coeffs)         
 
     planet = Planet(t0=0, m0=0, ecc=ecc, a=a, ms=mstar)
 
@@ -1331,11 +1288,14 @@ def find_power(
 
         teq = tstar * np.sqrt(rstar * RSOLAR / ds[i]) * (1 / 4) ** (1 / 4)
         teqs[i] = teq
-
-        p_r = pvol(
-            ts[i], w, wp, r_profile, rp, a_vals, eta_use, eta_mult=eta_mult, temp_mult=temp_mult
-        )
-
+        if ecc>0:
+            p_r = pvol(
+                ts[i], w, wp, r_profile, rp, a_vals, eta_use, eta_mult=eta_mult, temp_mult=temp_mult
+            )
+        elif ecc==0:
+            p_r = pvol_zeroecc(
+                ts[i], w, r_profile, rp, a_vals, eta_use, eta_mult=eta_mult, temp_mult=temp_mult,l=l
+            )
         # save the power profile for the first value in the ts array
         if i==0:
             pind_profile = p_r
