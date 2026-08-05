@@ -663,14 +663,14 @@ def find_coeffs(rp, y1s, y2s, y3s, y4s, alpha, m, a, e):
 
     sols = np.array(
         [
+            0,
             -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) *  e,
-            0,
-            0,
             -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) * 1/2 * e,
+            0,
+            0,
             -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3)  * e,
-            0,
-            0,
             -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3) * 1/2 * e,
+            0,
         ]
     )
 
@@ -705,14 +705,15 @@ def find_coeffs(rp, y1s, y2s, y3s, y4s, alpha, m, a, e):
 
     sols = np.array(
         [
+            
+            0,
             -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) *  5*e,
-            0,
-            0,
             -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) * 5/2 * e,
+            0,
+            0,
             -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3)  * 5*e,
-            0,
-            0,
             -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3) * 5/2 * e,
+            0,
         ]
     )
 
