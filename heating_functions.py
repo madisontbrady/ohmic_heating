@@ -765,12 +765,12 @@ def find_coeffs_lam(rp, ys, lam, m, a):
 
     sols = np.array(
         [
-            np.sqrt(8 * np.pi / 3) * 2 * m * np.sin(lam) * rp**2 / (8 * np.pi * a**3) * 1,
             0,
+            np.sqrt(8 * np.pi / 3) * 2 * m * np.sin(lam) * rp**2 / (8 * np.pi * a**3) * 1,
             np.sqrt(8 * np.pi / 3) * m * np.sin(lam) * rp**2 / (8 * np.pi * a**3) * 1,
             0,
-            np.sqrt(8 * np.pi / 3) * 4 * m * np.sin(lam) * rp / (8 * np.pi * a**3) * 1,
             0,
+            np.sqrt(8 * np.pi / 3) * 4 * m * np.sin(lam) * rp / (8 * np.pi * a**3) * 1,
             np.sqrt(8 * np.pi / 3) * 2 * m * np.sin(lam) * rp / (8 * np.pi * a**3 * 1),
             0,
         ]
@@ -778,76 +778,10 @@ def find_coeffs_lam(rp, ys, lam, m, a):
 
     x = np.linalg.solve(eqns, sols)
 
-    data["mu11"] = x[0]
-    data["mu1m1"] = x[1]
-    data["nu11"] = x[2]
-    data["nu1m1"] = x[3]
-
-    # l=2, m=0 case, wp terms.
-    reg2 = ys["y21"](rp)
-    img2 = ys["y22"](rp)
-    reg2dot = ys["y23"](rp)
-    img2dot = ys["y24"](rp)
-
-    # mu120, nu120, beta1, beta2
-    eqns = np.array(
-        [
-            [-img2, -reg2, -np.sqrt(4 * np.pi / 5) * (1 / rp**2), 0],
-            [reg2, -img2, 0, -np.sqrt(4 * np.pi / 5) * (1 / rp**2)],
-            [-img2dot, -reg2dot, 2 * np.sqrt(4 * np.pi / 5) * (1 / rp**3), 0],
-            [reg2dot, -img2dot, 0, 2 * np.sqrt(4 * np.pi / 5) * (1 / rp**3)],
-        ]
-    )
-
-    sols = np.array(
-        [
-            np.sqrt(4 * np.pi / 5) * m * np.sin(lam) * rp**3 / 8 / np.pi / a**4,
-            0,
-            3 * np.sqrt(4 * np.pi / 5) * m * np.sin(lam) * rp**2 / 8 / np.pi / a**4,
-            0,
-        ]
-    )
-
-    x = np.linalg.solve(eqns, sols)
-
-    data["mu20"] = x[0]
-    data["nu20"] = x[1]
-
-
-
-    # mu122, mu12m2, nu122, nu12m2, b1, b2, b3, b4
-    eqns = np.array(
-        [
-            [-img2, -img2, -reg2, -reg2, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0, 0, 0,],
-            [ reg2,  reg2, -img2, -img2, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0, 0,],
-            [-reg2,  reg2,  img2, -img2, 0, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2, 0,],
-            [-img2,  img2, -reg2,  reg2, 0, 0, 0, -4 * np.sqrt(6 * np.pi / 5) * 1 / rp**2,],
-            [-img2dot,-img2dot,-reg2dot,-reg2dot, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0, 0, 0,],
-            [ reg2dot, reg2dot,-img2dot,-img2dot, 0, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0, 0,],
-            [-reg2dot, reg2dot, img2dot,-img2dot, 0, 0, 4 * 2 * np.sqrt(6 * np.pi / 5) * 1 / rp**3, 0,],
-            [-img2dot, img2dot,-reg2dot, reg2dot, 0, 0, 0, 4 * 2 ** np.sqrt(6 * np.pi / 5) * 1 / rp**3,],
-        ]
-    )
-    sols = np.array(
-        [
-            -2 * np.sqrt(6 * np.pi / 5) * m * np.sin(lam) * rp**3 / 8 / np.pi / a**4,
-            0,
-            -4 / 3 * np.sqrt(6 * np.pi / 5) * m * np.sin(lam) * rp**3 / 8 / np.pi / a**4,
-            0,
-            -3 * 2 * np.sqrt(6 * np.pi / 5) * m * np.sin(lam) * rp**2 / 8 / np.pi / a**4,
-            0,
-            -3 * 4 / 3 * np.sqrt(6 * np.pi / 5) * m * np.sin(lam) * rp**2 / 8 / np.pi / a**4,
-            0,
-        ]
-    )
-    x = np.linalg.solve(eqns, sols)
-
-    data["mu22"] = x[0]
-    data["mu2m2"] = x[1]
-    data["nu22"] = x[2]
-    data["nu2m2"] = x[3]
-
-
+    data["mu111"] = x[0]
+    data["mu11m1"] = x[1]
+    data["nu111"] = x[2]
+    data["nu11m1"] = x[3]
 
     return data
 
@@ -947,22 +881,24 @@ def find_as_zeroecc(r, ys, coeffs):
     a_vals["a14"] = (coeffs["nu111"] + coeffs["nu11m1"]) * reg11 + (
         coeffs["mu111"] + coeffs["mu11m1"]
     ) * img11
+    try:
+        a_vals["a15"] = reg12 * coeffs["nu120"] + img12 * coeffs["mu120"]
+        a_vals["a16"] = reg12 * coeffs["mu120"] - img12 * coeffs["nu120"]
 
-    a_vals["a15"] = reg12 * coeffs["nu120"] + img12 * coeffs["mu120"]
-    a_vals["a16"] = reg12 * coeffs["mu120"] - img12 * coeffs["nu120"]
-
-    a_vals["a17"] = reg12 * (coeffs["nu122"] + coeffs["nu12m2"]) + img12 * (
-        coeffs["mu122"] + coeffs["mu12m2"]
-    )
-    a_vals["a18"] = reg12 * (coeffs["mu122"] - coeffs["mu12m2"]) + img12 * (
-        -coeffs["nu122"] + coeffs["nu12m2"]
-    )
-    a_vals["a19"] = reg12 * (coeffs["mu122"] + coeffs["mu12m2"]) + img12 * (
-        -coeffs["nu122"] - coeffs["nu12m2"]
-    )
-    a_vals["a110"] = reg12 * (-coeffs["nu122"] + coeffs["nu12m2"]) + img12 * (
-        -coeffs["mu122"] + coeffs["mu12m2"]
-    )
+        a_vals["a17"] = reg12 * (coeffs["nu122"] + coeffs["nu12m2"]) + img12 * (
+            coeffs["mu122"] + coeffs["mu12m2"]
+        )
+        a_vals["a18"] = reg12 * (coeffs["mu122"] - coeffs["mu12m2"]) + img12 * (
+            -coeffs["nu122"] + coeffs["nu12m2"]
+        )
+        a_vals["a19"] = reg12 * (coeffs["mu122"] + coeffs["mu12m2"]) + img12 * (
+            -coeffs["nu122"] - coeffs["nu12m2"]
+        )
+        a_vals["a110"] = reg12 * (-coeffs["nu122"] + coeffs["nu12m2"]) + img12 * (
+            -coeffs["mu122"] + coeffs["mu12m2"]
+        )
+    except: # an error will occur if only l=1 terms are included
+        pass
 
     return a_vals
     
@@ -1295,8 +1231,9 @@ def find_power(
             )
         elif ecc==0:
             p_r = pvol_zeroecc(
-                ts[i], w, r_profile, rp, a_vals, eta_use, eta_mult=eta_mult, temp_mult=temp_mult,l=l
+                ts[i], w, r_profile, rp, a_vals, eta_use, eta_mult=eta_mult, temp_mult=temp_mult,l=1
             )
+
         # save the power profile for the first value in the ts array
         if i==0:
             pind_profile = p_r
@@ -1403,9 +1340,10 @@ def find_power_lambda_zeroalpha(
         
         teqs[i] = teq
 
-        p_r = pvol( # Evaluate the pvol, but with w=wp.
-            ts[i],wp, wp,r_profile, rp, a_vals, eta_use, eta_mult=eta_mult, temp_mult=temp_mult
+        p_r = pvol_zeroecc( # Evaluate the pvol, but with w=wp.
+            ts[i],wp, r_profile, rp, a_vals, eta_use, eta_mult=eta_mult, temp_mult=temp_mult, l=1
         )
+        
 
         # save the power profile for the first value in the ts array
         if i==0:
