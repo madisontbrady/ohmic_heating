@@ -564,7 +564,7 @@ def find_coeffs(rp, y1s, y2s, y3s, y4s, alpha, m, a, e):
     rp = radius of planet (m)
     y1s, y2s, y3s, y4s = outputs of find_ys for the i=1, i=2, i=3, and i=4 cases as defined in 
     section 3.4.2 of the paper.
-    alpha = inclination angle (radians)
+    alpha = angle of stellar magnetic field (radians)
     a = planet distance from star (m)
     e = planet eccentricity 
     
@@ -1275,7 +1275,7 @@ def find_power(
     ecc is planet eccentricity
     r0 is an arbitrary small reference radius (m)
     p is planet orbital period, in days
-    alpha is the orbital inclination, in radians
+    alpha is the angle of the stellar magnetic field, in radians
     bsurf is the stellar surface magnetic field, in Gauss
     mstar is stellar mass, in Msolar
     rstar is stellar radius, in Rsolar
@@ -1670,7 +1670,7 @@ def find_power_lam(
     ts are times to evaluate power, in seconds.
     r0 is an arbitrary small reference radius (m)
     p is planet orbital period, in days
-    alpha is the orbital inclination, in radians
+    alpha is the angle of the stellar magnetic field, in radians
     lambda is the obliquity, in radians
     bsurf is the stellar surface magnetic field, in Gauss
     mstar is stellar mass, in Msolar
