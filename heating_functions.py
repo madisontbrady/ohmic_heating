@@ -8,6 +8,7 @@ import gastli.constants as cte
 from scipy.interpolate import CubicSpline
 from scipy.interpolate import LinearNDInterpolator
 import radvel
+import sympy
 
 
 # Constants, in mks.
@@ -22,7 +23,9 @@ MEARTH=5.972e24
 AMU=1.6605402e-27
 MH = 1.008*AMU
 MHE = 4.0026*AMU
-
+H=6.626e-34
+ME=9.10938e-31
+KB=1.380649e-23
 
 
 
@@ -1224,17 +1227,18 @@ def generate_profile(mpl=1,teq=600, cmf=0.01, log_feh=0, co=0.55, tint=100, fixe
 
     ts = np.concatenate((coupling.myplanet.T[idx_upper][:-1], coupling.myatmmodel.T_ode))
     ps = np.concatenate((coupling.myplanet.P[idx_upper][:-1], coupling.myatmmodel.P_ode))
-
+    rhos = np.concatenate((coupling.myplanet.rho[idx_upper][:-1], coupling.myatmmodel.rho_ode))
     idxsort = np.argsort(rs)
     rs=rs[idxsort]
     ts=ts[idxsort]
     ps=ps[idxsort]
-
+    rhos=rhos[idxsort]
     # interpolate these profiles using cubicsplines.
     tprofile = CubicSpline(rs, ts)
     pprofile = CubicSpline(rs, ps)
-
-    return rtot, tprofile, pprofile
+    rhoprofile = CubicSpline(rs, rhos)
+    
+    return rtot, tprofile, pprofile, rhoprofile
     
 def find_power(
     ts,
@@ -1250,6 +1254,7 @@ def find_power(
     tsurf=None,
     temp_mult=1,
     eta_mult=1,
+    eta_func="base",
     plot=False,
     use_GASTLI=False,
     fixed_radius=None,
@@ -1262,6 +1267,7 @@ def find_power(
     l=1,
     pregen_tprofile=None,
     pregen_pprofile=None,
+    pregen_rhoprofile=None,
     pregen_r = None,
 ):
     """
@@ -1278,6 +1284,8 @@ def find_power(
     tsurf allows us to manually define a planet surface temperature.  If left at default,
     the code calculates tsurf = teq.
     eta_mult = multiplicative factor on eta
+    eta_func = which eta function to use.  "base" uses the laine formulation, "alkali"  uses the
+    formulation that incorporates Na and K
     temp_mult = multiplicative factor on temperature
     plot = boolean, show plots if True
     use_GASTLI = boolean, use GASTLI to estimate the temperature-pressure profile if true (recommended)
@@ -1315,30 +1323,89 @@ def find_power(
     if use_GASTLI == True:
     
     	if pregen_tprofile==None and pregen_pprofile==None and pregen_r==None:
-            rp, tprofile, pprofile = generate_profile(
+            rp, tprofile, pprofile, rhoprofile = generate_profile(
                 mpl=mp, teq=teq, cmf=cmf, log_feh=log_feh, co=co, tint=tint, fixed_radius=fixed_radius,
             )
     	else:
-            rp, tprofile, pprofile = pregen_r, pregen_tprofile, pregen_pprofile
+            rp, tprofile, pprofile, rhoprofile = pregen_r, pregen_tprofile, pregen_pprofile, pregen_rhoprofile
+        
+    	if eta_func=="base":
 
+        	def eta_use(r, rp, temp_mult=1, eta_mult=1):
+                
+                
+                
+                    eta= (
+                        1.28
+                        * 10**-2
+                        * np.sqrt(pprofile(r))
+                        / (temp_mult * tprofile(r)) ** (3 / 4)
+                        * np.exp(78909 / (temp_mult * tprofile(r)))
+                        ) * eta_mult
+                
+                    if len(eta[np.isnan(eta)]>0):
+                        idx = np.arange(len(eta))[np.isnan(eta)]
+                        print(r[idx], tprofile(r[idx]), pprofile(r[idx]))
+                
+                    return eta
+                    
+                    
+    	elif eta_func=="alkali": #WARNING: this is extremely slow.
+        
+            def eta_use_helper(r, rp, temp_mult=temp_mult):
+                    xk=4.339 # ionization energy of potassium, eV
+                    xna=5.138 # ionization energy of sodium, eV
+                    abk=-6.88 # log abundance of potassium
+                    abna=-5.67 # log abundance of sodium
+                    temp = tprofile(r) * temp_mult
+                    nh = rhoprofile(r) / MH #TODO: density is also contributed to by helium, keep that in mind.  Also note that this is in general just a representation of 
+                    # "the number density of every gas that is inert in terms of ionization at this temperature" and therefore includes both hydrogen and helium.
+                    # Use sympy to solve the saha equation (TODO: find a way to do this in advance to speed it up, sympy is a litte wonky here)
+                    nna0, nk0, nna1, nk1, a, b, nna, nk = sympy.symbols('N_{Na}^0, N_K^0, N_{Na}^1, N_{K}^1, a, b, "N_{K}", "N_{Na}')
+                    # right-hand side of saha equation.
+                    aval = 2 * 1/2 * (2*np.pi*ME*KB*temp / H**2)**(3/2) * np.e**(-xna/(8.617e-5*temp))
+                    bval = 2 * 1/2 * (2*np.pi*ME*KB*temp / H**2)**(3/2) * np.e**(-xk/(8.617e-5*temp))
+                    nhval=nh
+                    nnaval = 10**abna*nhval
+                    nkval = 10**abk*nhval
+                    
+                    
+                    eq1 = sympy.Eq(nna1 *(nna1+nk1) / (nna - nna1),a)
+                    nk1_new = sympy.solve(eq1, nk1)[0]
+                    eq2 = sympy.simplify(sympy.Eq(nk1*(nna1+nk1) / (nk - nk1), b)).subs(nk1, nk1_new)#
+                    eqn =sympy.simplify(eq2)
+                    nna1_new = sympy.solve(eqn.subs(a, aval).subs(b, bval).subs(nna, nnaval).subs(nk, nkval), nna1)
+                    solution = None
+                    for i in nna1_new:
+                        if i.as_real_imag()[0] > 0:
+                            solution = i.as_real_imag()[0]
+                    if solution ==None:
+                        print("No solution for eta at T={temp:.0f}, rho={rho:.0f}".format(temp=temp, rho=rho))
+                        return np.nan
+                    else:
+                        nna1_new = nna1_new[2].as_real_imag()[0]
+                        nk1_new = nk1_new.subs(nna1, nna1_new).subs(nna, nnaval).subs(a, aval)
+                        ne_new = nk1_new + nna1_new
+                        nna0 = nnaval - nna1_new
+                        nk0 = nkval - nk1_new
+                        nn = nk0+nna0 + nhval
 
-    	def eta_use(r, rp, temp_mult=1, eta_mult=1):
-            
-            
-            
-            eta= (
-                1.28
-                * 10**-2
-                * np.sqrt(pprofile(r))
-                / (temp_mult * tprofile(r)) ** (3 / 4)
-                * np.exp(78909 / (temp_mult * tprofile(r)))
-            ) * eta_mult
-            
-            if len(eta[np.isnan(eta)]>0):
-                idx = np.arange(len(eta))[np.isnan(eta)]
-                print(r[idx], tprofile(r[idx]), pprofile(r[idx]))
-            
-            return eta
+                        eta_calc = 0.023 * nn/ne_new * temp**(1/2)
+                        
+                        return eta_calc
+                    
+            r_profile = np.linspace(r0, rp, nr)
+            etas=np.zeros(nr)
+            for i in range(nr):
+                    etas[i]=eta_use_helper(r_profile[i], rp)
+            etaprofile=CubicSpline(r_profile, etas)
+                    
+            def eta_use(r, rp, temp_mult=1, eta_mult=1):
+                    return eta_mult * etaprofile(r)
+    	elif type(eta_func) == CubicSpline: #user-input profile.
+            def eta_use(r, rp, temp_mult=1, eta_mult=1):
+                    return eta_mult * eta_func(r)    	    
+
     else:
         eta_use=eta_simple
         rp=fixed_radius
@@ -1379,7 +1446,7 @@ def find_power(
             )
         elif ecc==0:
             p_r = pvol_zeroecc(
-                ts[i], w, r_profile, rp, a_vals, eta_use, eta_mult=eta_mult, temp_mult=temp_mult,l=1
+                ts[i], w, r_profile, rp, a_vals, eta_use, eta_mult=eta_mult, temp_mult=temp_mult,l=l
             )
 
         # save the power profile for the first value in the ts array
@@ -1417,6 +1484,7 @@ def find_power_lambda_zeroalpha(
     tint=100,
     pregen_tprofile=None,
     pregen_pprofile=None,
+    pregen_rhoprofile=None,
     pregen_r = None,
 ):
     """
@@ -1439,11 +1507,11 @@ def find_power_lambda_zeroalpha(
     if use_GASTLI == True:
     
     	if pregen_tprofile==None and pregen_pprofile==None and pregen_r==None:
-            rp, tprofile, pprofile = generate_profile(
+            rp, tprofile, pprofile, rhoprofile = generate_profile(
                 mpl=mp, teq=teq, cmf=cmf, log_feh=log_feh, co=co, tint=tint, fixed_radius=fixed_radius,
             )
     	else:
-            rp, tprofile, pprofile = pregen_r, pregen_tprofile, pregen_pprofile
+            rp, tprofile, pprofile, rhoprofile = pregen_r, pregen_tprofile, pregen_pprofile, pregen_rhoprofile
 
 
     	def eta_use(r, rp, temp_mult=1, eta_mult=1):
@@ -1595,6 +1663,7 @@ def find_power_lam(
     l=1,
     pregen_tprofile=None,
     pregen_pprofile=None,
+    pregen_rhoprofile=None,
     pregen_r = None,
 ):
     """
@@ -1648,11 +1717,11 @@ def find_power_lam(
     if use_GASTLI == True:
     
     	if pregen_tprofile==None and pregen_pprofile==None and pregen_r==None:
-            rp, tprofile, pprofile = generate_profile(
+            rp, tprofile, pprofile, rhoprofile = generate_profile(
                 mpl=mp, teq=teq, cmf=cmf, log_feh=log_feh, co=co, tint=tint, fixed_radius=fixed_radius,
             )
     	else:
-            rp, tprofile, pprofile = pregen_r, pregen_tprofile, pregen_pprofile
+            rp, tprofile, pprofile, pregen_rhoprofile = pregen_r, pregen_tprofile, pregen_pprofile, pregen_rhoprofile
 
 
     	def eta_use(r, rp, temp_mult=1, eta_mult=1):
