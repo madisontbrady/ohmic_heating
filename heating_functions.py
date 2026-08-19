@@ -15,17 +15,29 @@ import sympy
 AU=1.496e11
 RSOLAR = 6.955e8
 MU0=1.256637e-6
-SB=5.67037e-8
+SB=5.67037e-8 #stefann-boltzmann constant
 RJUP=7.149e7
 MJUP=1.899e27
-G=6.67e-11
-MEARTH=5.972e24
+G=6.67e-11 # gravitational constant
+MEARTH=5.972e24 # earth mass
 AMU=1.6605402e-27
 MH = 1.008*AMU
 MHE = 4.0026*AMU
-H=6.626e-34
-ME=9.10938e-31
-KB=1.380649e-23
+MNA = 22.990*AMU
+MK = 39.098 * AMU
+
+H=6.626e-34 # planck constant
+ME=9.10938e-31 # electron mass
+KB=1.380649e-23 #boltzmann constant
+
+KB_EV = 8.617e-5 # boltzmann constant, in electron volts
+
+XK=4.339 # ionization energy of potassium, eV
+XNA=5.138 # ionization energy of sodium, eV
+ABK=5.03-12 # log abundance of potassium
+ABNA=6.24-12 # log abundance of sodium
+ABHE = 10.93-12 # log abundance of helium
+
 
 
 
@@ -1351,30 +1363,26 @@ def find_power(
                     
                     
     	elif eta_func=="alkali": #WARNING: this is extremely slow.
-        
-            def eta_use_helper(r, rp, temp_mult=temp_mult):
-                    xk=4.339 # ionization energy of potassium, eV
-                    xna=5.138 # ionization energy of sodium, eV
-                    abk=-6.88 # log abundance of potassium
-                    abna=-5.67 # log abundance of sodium
+            nna0, nk0, nna1, nk1, asaha, bsaha, nna, nk = sympy.symbols('N_{Na}^0, N_K^0, N_{Na}^1, N_{K}^1, asaha, bsaha, "N_{K}", "N_{Na}')
+            eq1 = sympy.Eq(nna1 *(nna1+nk1) / (nna - nna1),asaha)
+            nk1_new = sympy.solve(eq1, nk1)[0]
+            eq2 = sympy.simplify(sympy.Eq(nk1*(nna1+nk1) / (nk - nk1), bsaha)).subs(nk1, nk1_new)#
+            eqn =sympy.simplify(eq2)
+            
+            def eta_use_helper(r, rp, temp_mult=temp_mult, nk1_new=nk1_new):
+                    
                     temp = tprofile(r) * temp_mult
-                    nh = rhoprofile(r) / MH #TODO: density is also contributed to by helium, keep that in mind.  Also note that this is in general just a representation of 
-                    # "the number density of every gas that is inert in terms of ionization at this temperature" and therefore includes both hydrogen and helium.
-                    # Use sympy to solve the saha equation (TODO: find a way to do this in advance to speed it up, sympy is a litte wonky here)
-                    nna0, nk0, nna1, nk1, a, b, nna, nk = sympy.symbols('N_{Na}^0, N_K^0, N_{Na}^1, N_{K}^1, a, b, "N_{K}", "N_{Na}')
+                
+                    nh = rhoprofile(r) / (MH + 10**ABHE * MHE + 10**ABNA * MNA + 10**ABK * MK) 
                     # right-hand side of saha equation.
-                    aval = 2 * 1/2 * (2*np.pi*ME*KB*temp / H**2)**(3/2) * np.e**(-xna/(8.617e-5*temp))
-                    bval = 2 * 1/2 * (2*np.pi*ME*KB*temp / H**2)**(3/2) * np.e**(-xk/(8.617e-5*temp))
+                    aval = 2 * 1/2 * (2*np.pi*ME*KB*temp / H**2)**(3/2) * np.e**(-XNA/(KB_EV*temp))
+                    bval = 2 * 1/2 * (2*np.pi*ME*KB*temp / H**2)**(3/2) * np.e**(-XK/(KB_EV*temp))
                     nhval=nh
-                    nnaval = 10**abna*nhval
-                    nkval = 10**abk*nhval
+                    nheval = 10**ABHE * nhval
+                    nnaval = 10**ABNA*nhval
+                    nkval = 10**ABK*nhval
                     
-                    
-                    eq1 = sympy.Eq(nna1 *(nna1+nk1) / (nna - nna1),a)
-                    nk1_new = sympy.solve(eq1, nk1)[0]
-                    eq2 = sympy.simplify(sympy.Eq(nk1*(nna1+nk1) / (nk - nk1), b)).subs(nk1, nk1_new)#
-                    eqn =sympy.simplify(eq2)
-                    nna1_new = sympy.solve(eqn.subs(a, aval).subs(b, bval).subs(nna, nnaval).subs(nk, nkval), nna1)
+                    nna1_new = sympy.solve(eqn.subs(asaha, aval).subs(bsaha, bval).subs(nna, nnaval).subs(nk, nkval), nna1)
                     solution = None
                     for i in nna1_new:
                         if i.as_real_imag()[0] > 0:
@@ -1383,12 +1391,12 @@ def find_power(
                         print("No solution for eta at T={temp:.0f}, rho={rho:.0f}".format(temp=temp, rho=rho))
                         return np.nan
                     else:
-                        nna1_new = nna1_new[2].as_real_imag()[0]
-                        nk1_new = nk1_new.subs(nna1, nna1_new).subs(nna, nnaval).subs(a, aval)
+                        nna1_new = solution
+                        nk1_new = nk1_new.subs(nna1, nna1_new).subs(nna, nnaval).subs(asaha, aval)
                         ne_new = nk1_new + nna1_new
                         nna0 = nnaval - nna1_new
                         nk0 = nkval - nk1_new
-                        nn = nk0+nna0 + nhval
+                        nn = nk0+nna0 + nhval + nheval
 
                         eta_calc = 0.023 * nn/ne_new * temp**(1/2)
                         
