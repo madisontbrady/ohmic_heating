@@ -1363,17 +1363,15 @@ def find_power(
                     
                     
     	elif eta_func=="alkali": #WARNING: this is extremely slow.
-            nna0, nk0, nna1, nk1, asaha, bsaha, nna, nk = sympy.symbols('N_{Na}^0, N_K^0, N_{Na}^1, N_{K}^1, asaha, bsaha, "N_{K}", "N_{Na}')
-            eq1 = sympy.Eq(nna1 *(nna1+nk1) / (nna - nna1),asaha)
-            nk1_new = sympy.solve(eq1, nk1)[0]
-            eq2 = sympy.simplify(sympy.Eq(nk1*(nna1+nk1) / (nk - nk1), bsaha)).subs(nk1, nk1_new)#
-            eqn =sympy.simplify(eq2)
+
             
-            def eta_use_helper(r, rp, temp_mult=temp_mult, nk1_new=nk1_new):
+            def eta_use_helper(r, rp, temp_mult=temp_mult):
                     
                     temp = tprofile(r) * temp_mult
+                    
+                    rho=rhoprofile(r)
                 
-                    nh = rhoprofile(r) / (MH + 10**ABHE * MHE + 10**ABNA * MNA + 10**ABK * MK) 
+                    nh = rho / (MH + 10**ABHE * MHE + 10**ABNA * MNA + 10**ABK * MK) 
                     # right-hand side of saha equation.
                     aval = 2 * 1/2 * (2*np.pi*ME*KB*temp / H**2)**(3/2) * np.e**(-XNA/(KB_EV*temp))
                     bval = 2 * 1/2 * (2*np.pi*ME*KB*temp / H**2)**(3/2) * np.e**(-XK/(KB_EV*temp))
@@ -1382,23 +1380,29 @@ def find_power(
                     nnaval = 10**ABNA*nhval
                     nkval = 10**ABK*nhval
                     
-                    nna1_new = sympy.solve(eqn.subs(asaha, aval).subs(bsaha, bval).subs(nna, nnaval).subs(nk, nkval), nna1)
-                    solution = None
-                    for i in nna1_new:
-                        if i.as_real_imag()[0] > 0:
-                            solution = i.as_real_imag()[0]
-                    if solution ==None:
+                    try:
+                        # Algebraic term calculated using python sage.
+                        nna1 =(1/9*((aval**2 - aval*(bval + nnaval) - bval*nkval)**2/(aval - bval)**2 + 3*(2*aval**2*nnaval - aval*bval*nnaval)/(aval - bval))/(-1/2*aval**2*nnaval**2/(aval - bval) + 1/6*np.sqrt(0j+-1/3*aval**4*bval**2 + 2/3*aval**3*bval**3 - 1/3*aval**2*bval**4 - 4/3*bval**3*nkval**3 - 4/3*aval**3*nnaval**3 + 1/3*(8*aval**2*bval**2 - 8*aval*bval**3 - bval**4)*nkval**2 - 1/3*(aval**4 + 8*aval**3*bval - 8*aval**2*bval**2 + 12*aval**2*bval*nkval)*nnaval**2 - 2/3*(2*aval**4*bval - 4*aval**3*bval**2 + aval**2*bval**3 + aval*bval**4)*nkval - 2/3*(aval**4*bval + aval**3*bval**2 - 4*aval**2*bval**3 + 2*aval*bval**4 + 6*aval*bval**2*nkval**2 + (10*aval**3*bval - 19*aval**2*bval**2 + 10*aval*bval**3)*nkval)*nnaval)*aval*nnaval/(aval - bval)**2 - 1/27*(aval**2 - aval*(bval + nnaval) - bval*nkval)**3/(aval - bval)**3 - 1/6*(2*aval**2*nnaval - aval*bval*nnaval)*(aval**2 - aval*(bval + nnaval) - bval*nkval)/(aval - bval)**2)**(1/3) + (-1/2*aval**2*nnaval**2/(aval - bval) + 1/6*np.sqrt(0j+-1/3*aval**4*bval**2 + 2/3*aval**3*bval**3 - 1/3*aval**2*bval**4 - 4/3*bval**3*nkval**3 - 4/3*aval**3*nnaval**3 + 1/3*(8*aval**2*bval**2 - 8*aval*bval**3 - bval**4)*nkval**2 - 1/3*(aval**4 + 8*aval**3*bval - 8*aval**2*bval**2 + 12*aval**2*bval*nkval)*nnaval**2 - 2/3*(2*aval**4*bval - 4*aval**3*bval**2 + aval**2*bval**3 + aval*bval**4)*nkval - 2/3*(aval**4*bval + aval**3*bval**2 - 4*aval**2*bval**3 + 2*aval*bval**4 + 6*aval*bval**2*nkval**2 + (10*aval**3*bval - 19*aval**2*bval**2 + 10*aval*bval**3)*nkval)*nnaval)*aval*nnaval/(aval - bval)**2 - 1/27*(aval**2 - aval*(bval + nnaval) - bval*nkval)**3/(aval - bval)**3 - 1/6*(2*aval**2*nnaval - aval*bval*nnaval)*(aval**2 - aval*(bval + nnaval) - bval*nkval)/(aval - bval)**2)**(1/3) - 1/3*(aval**2 - aval*(bval + nnaval) - bval*nkval)/(aval - bval))
+
+        
+                        nna1=nna1.real
+                    except:
+                        print("No solution for eta at T={temp:.0f}, rho={rho:.0f}".format(temp=temp, rho=rho))
+                        return np.nan
+
+                    if nna1<0:
                         print("No solution for eta at T={temp:.0f}, rho={rho:.0f}".format(temp=temp, rho=rho))
                         return np.nan
                     else:
-                        nna1_new = solution
-                        nk1_new = nk1_new.subs(nna1, nna1_new).subs(nna, nnaval).subs(asaha, aval)
-                        ne_new = nk1_new + nna1_new
-                        nna0 = nnaval - nna1_new
-                        nk0 = nkval - nk1_new
-                        nn = nk0+nna0 + nhval + nheval
-
-                        eta_calc = 0.023 * nn/ne_new * temp**(1/2)
+                        nk1 = -(aval*nna1 + nna1**2 - aval*nnaval)/nna1
+                        ne = nk1 + nna1
+                        nna0 = nnaval - nna1
+                        nk0 = nkval - nk1
+                        nn = nk0+nna0 + nhval+nheval
+                        if ne==0:
+                            print("eta infinite at T={temp:.0f}, rho={rho:.0f}".format(temp=temp, rho=rho))
+                            return np.nan
+                        eta_calc = 0.023 * nn/ne * temp**(1/2)    
                         
                         return eta_calc
                     
@@ -1406,7 +1410,11 @@ def find_power(
             etas=np.zeros(nr)
             for i in range(nr):
                     etas[i]=eta_use_helper(r_profile[i], rp)
-            etaprofile=CubicSpline(r_profile, etas)
+            etaprofile=CubicSpline(r_profile[etas>0], etas[etas>0])
+            plt.plot(r_profile, etaprofile(r_profile))
+
+            plt.yscale("log")
+            plt.show()
                     
             def eta_use(r, rp, temp_mult=1, eta_mult=1):
                     return eta_mult * etaprofile(r)
