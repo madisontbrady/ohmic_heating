@@ -662,7 +662,7 @@ def find_coeffs(rp, y1s, y2s, y3s, y4s, alpha, m, a, e):
     reg31dot = y3s["y13"](rp)
     img31dot = y3s["y14"](rp)
 
-    # mu311, mu31m1, nu311, nu31m1, xi2, xi2, xi6, xi8
+    # mu311, mu31m1, nu311, nu31m1, xi2, xi4, xi6, xi8
     eqns = np.array(
         [
             [-reg31, reg31, img31, -img31, -np.sqrt(8 * np.pi / 3) * 1 / rp, 0, 0, 0],
@@ -679,19 +679,19 @@ def find_coeffs(rp, y1s, y2s, y3s, y4s, alpha, m, a, e):
     sols = np.array(
         [
             0,
-            -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) *  e,
-            -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) * 1/2 * e,
+            0,
+            3/2 * e * np.sqrt(8 * np.pi / 3) * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) ,
             0,
             0,
-            -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3)  * e,
-            -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3) * 1/2 * e,
+            0,
+            3 * e * np.sqrt(8 * np.pi / 3) * m * rp * np.sin(alpha) / (8 * np.pi * a**3) ,
             0,
         ]
     )
 
     x = np.linalg.solve(eqns, sols)
 
-    data["mu311"] = x[0]
+    data["mu311"] = x[0]Updated
     data["mu31m1"] = x[1]
     data["nu311"] = x[2]
     data["nu31m1"] = x[3]
@@ -722,12 +722,12 @@ def find_coeffs(rp, y1s, y2s, y3s, y4s, alpha, m, a, e):
         [
             
             0,
-            -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) *  5*e,
-            -np.sqrt(8 * np.pi / 3) * 1 * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3) * 5/2 * e,
+            -6*e*np.sqrt(8 * np.pi / 3) * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3),
+            -9/2*e*np.sqrt(8 * np.pi / 3) * m * rp**2 * np.sin(alpha) / (8 * np.pi * a**3),
             0,
             0,
-            -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3)  * 5*e,
-            -2 * np.sqrt(8 * np.pi / 3) * 1 * m * rp * np.sin(alpha) / (8 * np.pi * a**3) * 5/2 * e,
+            -12*e*np.sqrt(8 * np.pi / 3) * m * rp * np.sin(alpha) / (8 * np.pi * a**3),
+            -9*e*np.sqrt(8 * np.pi / 3) * m * rp * np.sin(alpha) / (8 * np.pi * a**3),
             0,
         ]
     )
