@@ -691,7 +691,7 @@ def find_coeffs(rp, y1s, y2s, y3s, y4s, alpha, m, a, e):
 
     x = np.linalg.solve(eqns, sols)
 
-    data["mu311"] = x[0]Updated
+    data["mu311"] = x[0]
     data["mu31m1"] = x[1]
     data["nu311"] = x[2]
     data["nu31m1"] = x[3]
